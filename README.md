@@ -14,7 +14,6 @@ This version includes the landing page, sign in, register, and a dashboard with 
 CourtConnect/
 ├── frontend/   React app
 ├── backend/    Spring Boot API
-├── supabase/   schema.sql (database tables)
 └── docs/       ERD.md
 ```
 
@@ -57,7 +56,7 @@ Open http://localhost:5173.
 - `GET /api/auth/me`. Requires the header `Authorization: Bearer <token>`.
 
 ## Roles
-PLAYER, FACILITY_ADMIN, SYSTEM_ADMIN. Self-registration creates players only. Passwords are hashed with BCrypt.
+PLAYER, FACILITY_ADMIN, SYSTEM_ADMIN. Self-registration creates players only. The first system administrator is created on backend startup when the `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables are set (only if that email does not exist yet). Passwords are hashed with BCrypt.
 
 ## Database design
 See `docs/ERD.md` for the entity relationship diagram and `supabase/schema.sql` for the tables.

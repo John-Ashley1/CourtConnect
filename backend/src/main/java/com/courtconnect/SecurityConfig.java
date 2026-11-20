@@ -8,17 +8,30 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
+import java.io.IOException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
 import java.util.List;
 @Configuration
 public class SecurityConfig {
-  @Bean SecurityFilterChain chain(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
+  /** Same JSON error shape as ApiExceptionHandler, for errors raised before a controller runs. */
+  static void writeError(HttpServletResponse res, ObjectMapper mapper, HttpStatus status, String message, String path) throws IOException {
+    res.setStatus(status.value());
+    res.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    res.setCharacterEncoding("UTF-8");
+    mapper.writeValue(res.getOutputStream(), ApiExceptionHandler.body(status, message, path, null));
+  }
+
+  @Bean SecurityFilterChain chain(HttpSecurity http, JwtFilter jwtFilter, ObjectMapper mapper) throws Exception {
     http.csrf(c -> c.disable()).cors(Customizer.withDefaults())
       .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
       .authorizeHttpRequests(a -> a.requestMatchers("/api/auth/register","/api/auth/login","/error").permitAll().anyRequest().authenticated())
-      .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+      .exceptionHandling(e -> e
+        .authenticationEntryPoint((req, res, ex) -> writeError(res, mapper, HttpStatus.UNAUTHORIZED, "Sign in to continue.", req.getRequestURI()))
+        .accessDeniedHandler((req, res, ex) -> writeError(res, mapper, HttpStatus.FORBIDDEN, "You don't have permission to do that.", req.getRequestURI())))
       .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }

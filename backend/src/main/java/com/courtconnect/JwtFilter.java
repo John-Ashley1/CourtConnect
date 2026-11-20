@@ -1,4 +1,5 @@
 package com.courtconnect;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -17,9 +18,14 @@ public class JwtFilter extends OncePerRequestFilter {
     String h = req.getHeader("Authorization");
     if (h != null && h.startsWith("Bearer ")) {
       try {
-        users.findByEmail(jwt.subject(h.substring(7))).ifPresent(u -> SecurityContextHolder.getContext().setAuthentication(
-          new UsernamePasswordAuthenticationToken(u, null, List.of(new SimpleGrantedAuthority("ROLE_" + u.getRole())))));
-      } catch (JwtException | IllegalArgumentException ignored) {}
+        Claims c = jwt.parse(h.substring(7));
+        Long id = Long.valueOf(c.getSubject());           // Increment 1 tokens (email subject) fail here → sign in again
+        Integer ver = c.get("ver", Integer.class);
+        users.findById(id)
+          .filter(u -> ver != null && ver == u.getTokenVersion())   // stale after password change/reset
+          .ifPresent(u -> SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(u, null, List.of(new SimpleGrantedAuthority("ROLE_" + u.getRole())))));
+      } catch (JwtException | IllegalArgumentException ignored) {}   // invalid/expired → stays anonymous → 401
     }
     chain.doFilter(req, res);
   }

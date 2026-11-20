@@ -28,7 +28,7 @@ export const ROLES = {
         title: 'Account',
         items: [
           { label: 'Notifications', path: '/player/notifications', icon: 'bell' },
-          { label: 'Profile', path: '/player/profile', icon: 'user' },
+          { label: 'Profile', path: '/player/profile', icon: 'user', page: 'profile' },
         ],
       },
     ],
@@ -61,7 +61,7 @@ export const ROLES = {
         title: 'Account',
         items: [
           { label: 'Notifications', path: '/facility/notifications', icon: 'bell' },
-          { label: 'Profile', path: '/facility/profile', icon: 'user' },
+          { label: 'Profile', path: '/facility/profile', icon: 'user', page: 'profile' },
         ],
       },
     ],
@@ -80,7 +80,7 @@ export const ROLES = {
           { label: 'Facilities', path: '/admin/facilities', icon: 'building' },
         ],
       },
-      { title: 'Account', items: [{ label: 'Profile', path: '/admin/profile', icon: 'user' }] },
+      { title: 'Account', items: [{ label: 'Profile', path: '/admin/profile', icon: 'user', page: 'profile' }] },
     ],
   },
 }

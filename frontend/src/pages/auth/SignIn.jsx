@@ -4,10 +4,10 @@ import { api } from '../../api'
 import { useAuth } from '../../auth'
 import { homeFor } from '../../roles'
 import Field from '../../components/Field'
-import AuthLayout, { EMAIL_RE, ErrorBanner } from './AuthLayout'
+import AuthLayout, { EMAIL_RE, ErrorBanner, InfoBanner } from './AuthLayout'
 
 export default function SignIn() {
-  const { login } = useAuth()
+  const { login, notice } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '' })
@@ -56,6 +56,7 @@ export default function SignIn() {
   return (
     <AuthLayout mode="login" title="Welcome back!" subtitle="Sign in to book courts and join games near you."
       footer={<>New to CourtConnect? <Link to="/register">Create an account</Link></>}>
+      {notice && !serverError && <InfoBanner>{notice}</InfoBanner>}
       {serverError && <ErrorBanner offline={serverError.offline}>{serverError.message}</ErrorBanner>}
       <form className="auth-form" onSubmit={submit} noValidate>
         <Field id="si-email" label="Email" type="email" placeholder="you@example.com" autoComplete="email"

@@ -36,4 +36,14 @@ export function ErrorBanner({ offline, children }) {
   )
 }
 
+/** Neutral notice, e.g. "Your session has ended" or "Password changed". */
+export function InfoBanner({ children }) {
+  return (
+    <div className="banner bn-info" role="status">
+      <Icon name="alert" />
+      <span>{children}</span>
+    </div>
+  )
+}
+
 export const EMAIL_RE = /^\S+@\S+\.\S+$/

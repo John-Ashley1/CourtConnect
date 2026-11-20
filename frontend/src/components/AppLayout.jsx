@@ -9,7 +9,7 @@ import Icon from './Icon'
  * Shared shell for signed-in pages: teal top bar, role sidebar, breadcrumbs, page header.
  * Breadcrumbs are built from the sidebar (Home › Group › Page) unless `crumbs` is passed.
  */
-export default function AppLayout({ title, description, actions, crumbs, children }) {
+export default function AppLayout({ title, description, actions, crumbs, narrow, children }) {
   const { user, logout } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -65,7 +65,7 @@ export default function AppLayout({ title, description, actions, crumbs, childre
         </nav>
         {menuOpen && <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden="true" />}
 
-        <main className="page">
+        <main className={'page' + (narrow ? ' page-narrow' : '')}>
           <nav aria-label="Breadcrumb" className="crumbs">
             <ol>
               {trail.map((c, i) => {

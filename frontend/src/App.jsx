@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { api, getToken, setToken } from './api'
+import { api, getToken, setToken, SESSION_ENDED } from './api'
 import { AuthCtx } from './auth'
 import { ROLES, homeFor } from './roles'
 import RequireRole from './components/RequireRole'
@@ -9,11 +9,14 @@ import Landing from './pages/Landing'
 import SignIn from './pages/auth/SignIn'
 import Register from './pages/auth/Register'
 import ComingSoon from './pages/ComingSoon'
+import Profile from './pages/Profile'
 import PlayerHome from './pages/player/PlayerHome'
 import FacilityDashboard from './pages/facility/FacilityDashboard'
 import AdminDashboard from './pages/admin/AdminDashboard'
 
 const HOME_PAGES = { PLAYER: PlayerHome, FACILITY_ADMIN: FacilityDashboard, SYSTEM_ADMIN: AdminDashboard }
+// Sidebar items with a `page` key (see roles.js) use these; every other item shows "Coming soon".
+const BUILT_PAGES = { profile: Profile }
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -33,8 +36,19 @@ export default function App() {
 
   useEffect(() => { if (getToken()) verify() }, [verify])
 
-  const login = ({ token, user }) => { setToken(token); setUser(user) }
-  const logout = () => { setToken(null); setUser(null) }
+  // Message shown once on the sign-in page, e.g. after a password change or an expired session.
+  const [notice, setNotice] = useState(null)
+
+  const login = ({ token, user }) => { setToken(token); setUser(user); setNotice(null) }
+  const logout = (message = null) => { setToken(null); setUser(null); setNotice(message) }
+  const updateUser = (changes) => setUser((u) => (u ? { ...u, ...changes } : u))
+
+  // The backend rejected our token (expired, or signed out everywhere after a password change).
+  useEffect(() => {
+    const onEnded = () => { if (getToken()) logout('Your session has ended. Please sign in again.') }
+    window.addEventListener(SESSION_ENDED, onEnded)
+    return () => window.removeEventListener(SESSION_ENDED, onEnded)
+  }, [])
 
   if (status === 'checking') return <div className="boot" role="status">Loading…</div>
   if (status === 'offline') {
@@ -54,7 +68,7 @@ export default function App() {
   const home = user ? homeFor(user.role) : '/login'
 
   return (
-    <AuthCtx.Provider value={{ user, login, logout }}>
+    <AuthCtx.Provider value={{ user, login, logout, updateUser, notice, clearNotice: () => setNotice(null) }}>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={user ? <Navigate to={home} replace /> : <SignIn />} />
@@ -67,7 +81,10 @@ export default function App() {
           return (
             <Route key={role} path={cfg.home} element={<RequireRole role={role} />}>
               <Route index element={<Home />} />
-              {others.map((i) => <Route key={i.path} path={i.path.slice(cfg.home.length + 1)} element={<ComingSoon />} />)}
+              {others.map((i) => {
+                const Page = BUILT_PAGES[i.page] ?? ComingSoon
+                return <Route key={i.path} path={i.path.slice(cfg.home.length + 1)} element={<Page />} />
+              })}
               <Route path="*" element={<Navigate to={cfg.home} replace />} />
             </Route>
           )

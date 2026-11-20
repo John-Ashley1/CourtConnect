@@ -8,8 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 @RestController @RequestMapping("/api/auth")
 public class AuthController {
-  private final UserRepository users; private final PasswordEncoder encoder; private final JwtService jwt;
-  public AuthController(UserRepository users, PasswordEncoder encoder, JwtService jwt){ this.users=users; this.encoder=encoder; this.jwt=jwt; }
+  private final UserRepository users; private final PasswordEncoder encoder; private final JwtService jwt; private final PasswordResetService resets;
+  public AuthController(UserRepository users, PasswordEncoder encoder, JwtService jwt, PasswordResetService resets){
+    this.users=users; this.encoder=encoder; this.jwt=jwt; this.resets=resets; }
   @PostMapping("/register")
   public AuthResponse register(@Valid @RequestBody RegisterRequest r){
     String email = r.email().trim().toLowerCase();
@@ -25,4 +26,18 @@ public class AuthController {
     return new AuthResponse(jwt.generate(u), UserDto.of(u));
   }
   @GetMapping("/me") public UserDto me(@AuthenticationPrincipal User u){ return UserDto.of(u); }
+
+  /** Same answer whether or not the email is registered. */
+  @PostMapping("/forgot-password")
+  public MessageResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest r){
+    resets.requestReset(r.email());
+    return new MessageResponse("If an account exists for that email, we've sent a link to reset your password. It expires in "
+      + PasswordResetService.TTL.toMinutes() + " minutes.");
+  }
+
+  @PostMapping("/reset-password")
+  public MessageResponse resetPassword(@Valid @RequestBody ResetPasswordRequest r){
+    resets.resetPassword(r.token(), r.newPassword());
+    return new MessageResponse("Your password has been reset. Sign in with your new password.");
+  }
 }

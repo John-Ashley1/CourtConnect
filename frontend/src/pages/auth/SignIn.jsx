@@ -63,6 +63,9 @@ export default function SignIn() {
           value={form.email} onChange={set('email')} error={errors.email} />
         <Field id="si-pw" label="Password" type="password" placeholder="Enter your password" autoComplete="current-password"
           value={form.password} onChange={set('password')} error={errors.password} />
+        <p className="auth-forgot">
+          <Link to="/forgot-password" state={{ email: form.email.trim() }}>Forgot password?</Link>
+        </p>
         <button className="btn pri" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
       </form>
     </AuthLayout>

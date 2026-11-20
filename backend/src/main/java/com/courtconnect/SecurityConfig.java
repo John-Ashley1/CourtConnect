@@ -28,7 +28,7 @@ public class SecurityConfig {
   @Bean SecurityFilterChain chain(HttpSecurity http, JwtFilter jwtFilter, ObjectMapper mapper) throws Exception {
     http.csrf(c -> c.disable()).cors(Customizer.withDefaults())
       .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .authorizeHttpRequests(a -> a.requestMatchers("/api/auth/register","/api/auth/login","/error").permitAll().anyRequest().authenticated())
+      .authorizeHttpRequests(a -> a.requestMatchers("/api/auth/register","/api/auth/login","/api/auth/forgot-password","/api/auth/reset-password","/error").permitAll().anyRequest().authenticated())
       .exceptionHandling(e -> e
         .authenticationEntryPoint((req, res, ex) -> writeError(res, mapper, HttpStatus.UNAUTHORIZED, "Sign in to continue.", req.getRequestURI()))
         .accessDeniedHandler((req, res, ex) -> writeError(res, mapper, HttpStatus.FORBIDDEN, "You don't have permission to do that.", req.getRequestURI())))

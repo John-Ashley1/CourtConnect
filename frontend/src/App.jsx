@@ -8,6 +8,8 @@ import EmptyState from './components/EmptyState'
 import Landing from './pages/Landing'
 import SignIn from './pages/auth/SignIn'
 import Register from './pages/auth/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 import ComingSoon from './pages/ComingSoon'
 import Profile from './pages/Profile'
 import PlayerHome from './pages/player/PlayerHome'
@@ -73,7 +75,10 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={user ? <Navigate to={home} replace /> : <SignIn />} />
         <Route path="/register" element={user ? <Navigate to={home} replace /> : <Register />} />
-        <Route path="/dashboard" element={<Navigate to={home} replace />} />
+        <Route path="/forgot-password" element={user ? <Navigate to={home} replace /> : <ForgotPassword />} />
+        {/* Open even when signed in: the link may be clicked in a browser that has a session. */}
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/dashboard"element={<Navigate to={home} replace />} />
 
         {Object.entries(ROLES).map(([role, cfg]) => {
           const Home = HOME_PAGES[role]

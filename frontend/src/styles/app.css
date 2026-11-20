@@ -154,6 +154,11 @@ a:hover { color: #0B5D56; }
 .auth-form { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
 .auth-form > .hint { margin: 0; }
 .auth-foot { margin-top: 20px; font-size: 14px; text-align: center; }
+.auth-forgot { margin: -6px 0 0; text-align: right; font-size: 13.5px; }
+.auth-forgot a { font-weight: 600; }
+.auth-note { margin-top: 14px; line-height: 1.5; }
+.auth-wide { width: 100%; margin-top: 16px; }
+.banner a { color: inherit; font-weight: 700; }
 .auth-foot a { font-weight: 700; }
 .meter { display: flex; gap: 4px; margin-top: 8px; }
 .meter i { flex: 1; height: 5px; border-radius: 3px; background: #E2E8F0; }

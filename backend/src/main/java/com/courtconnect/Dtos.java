@@ -26,4 +26,12 @@ public final class Dtos {
     @NotBlank(message="Enter a new password.") @Size(min=8, max=72, message="New password must be 8 to 72 characters.") String newPassword) {}
   /** A fresh token for this device; tokens on every other device stop working. */
   public record PasswordChangedResponse(String token, String message) {}
+
+  // ---- Increment 2: forgot / reset password ----
+  public record ForgotPasswordRequest(
+    @NotBlank(message="Enter your email address.") @Email(regexp=".+@.+\\..+", message="Enter a valid email address, like name@example.com.") String email) {}
+  public record ResetPasswordRequest(
+    @NotBlank(message="This reset link is missing its code. Open the link from the email again.") String token,
+    @NotBlank(message="Enter a new password.") @Size(min=8, max=72, message="New password must be 8 to 72 characters.") String newPassword) {}
+  public record MessageResponse(String message) {}
 }

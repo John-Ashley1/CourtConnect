@@ -2,9 +2,13 @@ import { Link } from 'react-router-dom'
 import BrandLogo from '../../components/BrandLogo'
 import Icon from '../../components/Icon'
 
-/** Split screen: brand on the left, teal panel with the form card on the right. */
+/**
+ * Split screen: brand on the left, teal panel with the form card on the right.
+ * mode: 'login' | 'register' show the Sign in / Register tabs; anything else (e.g. 'reset') hides them.
+ */
 export default function AuthLayout({ mode, title, subtitle, children, footer }) {
   const isLogin = mode === 'login'
+  const showTabs = mode === 'login' || mode === 'register'
   return (
     <div className="auth">
       <section className="auth-brand">
@@ -12,10 +16,12 @@ export default function AuthLayout({ mode, title, subtitle, children, footer }) 
       </section>
       <section className="auth-panel">
         <div className="card auth-card">
-          <nav className="auth-tabs" aria-label="Account">
-            <Link to="/login" className={isLogin ? 'on' : ''} aria-current={isLogin ? 'page' : undefined}>Sign in</Link>
-            <Link to="/register" className={!isLogin ? 'on' : ''} aria-current={!isLogin ? 'page' : undefined}>Register</Link>
-          </nav>
+          {showTabs && (
+            <nav className="auth-tabs" aria-label="Account">
+              <Link to="/login" className={isLogin ? 'on' : ''} aria-current={isLogin ? 'page' : undefined}>Sign in</Link>
+              <Link to="/register" className={!isLogin ? 'on' : ''} aria-current={!isLogin ? 'page' : undefined}>Register</Link>
+            </nav>
+          )}
           <h1>{title}</h1>
           <p className="auth-sub">{subtitle}</p>
           {children}

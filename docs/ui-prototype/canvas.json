@@ -1,0 +1,450 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-19T22:49:10Z"
+ },
+ "title": "CourtConnect UI/UX Prototype",
+ "launch": {
+  "view": "canvas",
+  "page": "public"
+ },
+ "pages": [
+  {
+   "id": "public",
+   "name": "Public & sign-in"
+  },
+  {
+   "id": "player",
+   "name": "Player"
+  },
+  {
+   "id": "facility",
+   "name": "Facility Admin"
+  },
+  {
+   "id": "admin",
+   "name": "System Admin"
+  },
+  {
+   "id": "mobile",
+   "name": "Phone (Player)"
+  }
+ ],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 1500,
+   "title": "Landing page",
+   "page": "public",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "auth-sign-in.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 960,
+   "title": "Sign in",
+   "page": "public",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "auth-register.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 1040,
+   "title": "Register",
+   "page": "public",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "coverage-screen-map.dc.html": {
+   "x": 0,
+   "y": 1620,
+   "w": 1440,
+   "h": 1900,
+   "title": "Screen map & SRS coverage",
+   "page": "public",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-home.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 1080,
+   "title": "Player · Home",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-find-courts.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 1300,
+   "title": "Player · Find courts",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-court-details.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 1250,
+   "title": "Player · Mabolo Open Courts",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-checkout.dc.html": {
+   "x": 0,
+   "y": 1420,
+   "w": 1440,
+   "h": 1000,
+   "title": "Player · Review and pay",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-booking-confirmed.dc.html": {
+   "x": 1520,
+   "y": 1420,
+   "w": 1440,
+   "h": 940,
+   "title": "Player · Booking confirmed + QR",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-my-bookings.dc.html": {
+   "x": 3040,
+   "y": 1420,
+   "w": 1440,
+   "h": 1020,
+   "title": "Player · My bookings",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-open-games.dc.html": {
+   "x": 0,
+   "y": 2560,
+   "w": 1440,
+   "h": 1180,
+   "title": "Player · Open games",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-post-game.dc.html": {
+   "x": 1520,
+   "y": 2560,
+   "w": 1440,
+   "h": 1000,
+   "title": "Player · Post an open game",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-my-games.dc.html": {
+   "x": 3040,
+   "y": 2560,
+   "w": 1440,
+   "h": 960,
+   "title": "Player · My games",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-notifications.dc.html": {
+   "x": 0,
+   "y": 3860,
+   "w": 1440,
+   "h": 960,
+   "title": "Player · Notifications",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "player-profile.dc.html": {
+   "x": 1520,
+   "y": 3860,
+   "w": 1440,
+   "h": 820,
+   "title": "Player · Profile",
+   "page": "player",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "facility-dashboard.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Facility Admin · Dashboard",
+   "page": "facility",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "facility-facilities.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 1000,
+   "title": "Facility Admin · Facilities",
+   "page": "facility",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "facility-courts.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 1000,
+   "title": "Facility Admin · Courts",
+   "page": "facility",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "facility-hours-slots.dc.html": {
+   "x": 0,
+   "y": 1120,
+   "w": 1440,
+   "h": 1100,
+   "title": "Facility Admin · Hours & slots",
+   "page": "facility",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "facility-schedule.dc.html": {
+   "x": 1520,
+   "y": 1120,
+   "w": 1440,
+   "h": 900,
+   "title": "Facility Admin · Schedule",
+   "page": "facility",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "facility-bookings.dc.html": {
+   "x": 3040,
+   "y": 1120,
+   "w": 1440,
+   "h": 1000,
+   "title": "Facility Admin · Booking records",
+   "page": "facility",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "facility-check-in.dc.html": {
+   "x": 0,
+   "y": 2340,
+   "w": 1440,
+   "h": 860,
+   "title": "Facility Admin · QR check-in",
+   "page": "facility",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "facility-reports.dc.html": {
+   "x": 1520,
+   "y": 2340,
+   "w": 1440,
+   "h": 1000,
+   "title": "Facility Admin · Reports",
+   "page": "facility",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "facility-notifications.dc.html": {
+   "x": 3040,
+   "y": 2340,
+   "w": 1440,
+   "h": 860,
+   "title": "Facility Admin · Notifications",
+   "page": "facility",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "facility-profile.dc.html": {
+   "x": 0,
+   "y": 3460,
+   "w": 1440,
+   "h": 820,
+   "title": "Facility Admin · Profile",
+   "page": "facility",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "admin-dashboard.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 980,
+   "title": "System Admin · Dashboard",
+   "page": "admin",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "admin-users.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 1000,
+   "title": "System Admin · Users & roles",
+   "page": "admin",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "admin-facilities.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "System Admin · Facilities",
+   "page": "admin",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "admin-profile.dc.html": {
+   "x": 0,
+   "y": 1120,
+   "w": 1440,
+   "h": 820,
+   "title": "System Admin · Profile",
+   "page": "admin",
+   "is_interactive": true,
+   "expand": "fill"
+  },
+  "mobile-find-courts.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Phone · Find courts",
+   "page": "mobile",
+   "is_interactive": true
+  },
+  "mobile-book-slot.dc.html": {
+   "x": 470,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Phone · Book a slot",
+   "page": "mobile",
+   "is_interactive": true
+  },
+  "mobile-booking-qr.dc.html": {
+   "x": 940,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Phone · Booking QR",
+   "page": "mobile",
+   "is_interactive": true
+  },
+  "mobile-find-players.dc.html": {
+   "x": 1410,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Phone · Find players",
+   "page": "mobile",
+   "is_interactive": true
+  },
+  "mobile-notifications.dc.html": {
+   "x": 1880,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Phone · Notifications",
+   "page": "mobile",
+   "is_interactive": true
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "auth-sign-in.dc.html",
+  "auth-register.dc.html",
+  "coverage-screen-map.dc.html",
+  "player-home.dc.html",
+  "player-find-courts.dc.html",
+  "player-court-details.dc.html",
+  "player-checkout.dc.html",
+  "player-booking-confirmed.dc.html",
+  "player-my-bookings.dc.html",
+  "player-open-games.dc.html",
+  "player-post-game.dc.html",
+  "player-my-games.dc.html",
+  "player-notifications.dc.html",
+  "player-profile.dc.html",
+  "facility-dashboard.dc.html",
+  "facility-facilities.dc.html",
+  "facility-courts.dc.html",
+  "facility-hours-slots.dc.html",
+  "facility-schedule.dc.html",
+  "facility-bookings.dc.html",
+  "facility-check-in.dc.html",
+  "facility-reports.dc.html",
+  "facility-notifications.dc.html",
+  "facility-profile.dc.html",
+  "admin-dashboard.dc.html",
+  "admin-users.dc.html",
+  "admin-facilities.dc.html",
+  "admin-profile.dc.html",
+  "mobile-find-courts.dc.html",
+  "mobile-book-slot.dc.html",
+  "mobile-booking-qr.dc.html",
+  "mobile-find-players.dc.html",
+  "mobile-notifications.dc.html"
+ ],
+ "notes": {
+  "t_public": {
+   "x": 0,
+   "y": -300,
+   "text": "CourtConnect · Public & sign-in",
+   "kind": "title1",
+   "maxW": 4480,
+   "page": "public"
+  },
+  "t_player": {
+   "x": 0,
+   "y": -300,
+   "text": "CourtConnect · Player",
+   "kind": "title1",
+   "maxW": 4480,
+   "page": "player"
+  },
+  "t_facility": {
+   "x": 0,
+   "y": -300,
+   "text": "CourtConnect · Facility Admin",
+   "kind": "title1",
+   "maxW": 4480,
+   "page": "facility"
+  },
+  "t_admin": {
+   "x": 0,
+   "y": -300,
+   "text": "CourtConnect · System Admin",
+   "kind": "title1",
+   "maxW": 4480,
+   "page": "admin"
+  },
+  "t_mobile": {
+   "x": 0,
+   "y": -300,
+   "text": "CourtConnect · Phone (Player)",
+   "kind": "title1",
+   "maxW": 2350,
+   "page": "mobile"
+  }
+ },
+ "designSystems": []
+}

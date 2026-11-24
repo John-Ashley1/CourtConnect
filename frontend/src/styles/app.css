@@ -90,7 +90,9 @@ a:hover { color: #0B5D56; }
 .side-link:hover { background: #EEF8F6; color: var(--cc-navy); }
 .side-link.on { background: var(--cc-mint); font-weight: 700; }
 .side-link.on svg { color: var(--cc-green); }
-.side-backdrop { display: none; }
+.skip-link { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 10px 16px; border-radius: 10px; background: var(--cc-navy); color: #fff; font-weight: 700; text-decoration: none; }
+.skip-link:focus { top: 12px; color: #fff; }
+main:focus { outline: none; }
 .page { flex: 1; min-width: 0; padding: 24px 32px 48px; }
 .crumbs ol { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0 0 14px; padding: 0; font-size: 13px; color: var(--cc-muted); }
 .crumbs li + li::before { content: '›'; margin-right: 6px; }
@@ -138,7 +140,6 @@ a:hover { color: #0B5D56; }
 .owners-inner > div { max-width: 560px; }
 .owners h2 { font-size: 26px; font-weight: 800; }
 .owners p { margin-top: 8px; color: #D6E2F0; font-size: 15.5px; line-height: 1.55; }
-.site-foot { padding: 20px 32px; font-size: 13px; color: var(--cc-muted); }
 
 /* ---------- Sign in / register ---------- */
 .auth { min-height: 100vh; display: flex; flex-wrap: wrap; }
@@ -160,8 +161,6 @@ a:hover { color: #0B5D56; }
 .auth-wide { width: 100%; margin-top: 16px; }
 .banner a { color: inherit; font-weight: 700; }
 .auth-foot a { font-weight: 700; }
-.meter { display: flex; gap: 4px; margin-top: 8px; }
-.meter i { flex: 1; height: 5px; border-radius: 3px; background: #E2E8F0; }
 .privacy { background: var(--cc-bg); border-radius: 10px; padding: 12px; font-size: 13px; line-height: 1.5; color: var(--cc-muted); }
 .privacy b { color: var(--cc-navy); }
 .check { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; color: var(--cc-navy); font-weight: 600; cursor: pointer; }
@@ -234,9 +233,11 @@ a:hover { color: #0B5D56; }
 @media (max-width: 860px) {
   .menu-btn { display: inline-flex; }
   .topbar { padding: 10px 16px; gap: 8px; }
-  .side { position: fixed; z-index: 25; top: 64px; bottom: 0; left: 0; width: min(280px, 85vw); overflow-y: auto; transform: translateX(-100%); transition: transform .2s ease-out; box-shadow: 0 10px 30px rgba(11, 37, 69, .18); }
-  .side.open { transform: none; }
-  .side-backdrop { display: block; position: fixed; inset: 64px 0 0; z-index: 20; background: rgba(11, 37, 69, .4); }
+  /* Sidebar stacks above the page content; the menu button shows/hides it. */
+  .shell-body { flex-direction: column; }
+  .side { display: none; flex: none; width: 100%; border-right: 0; border-bottom: 1px solid var(--cc-line); padding: 4px 16px 14px; }
+  .side.open { display: block; }
+  .who-text { display: none; }
   .page { padding: 20px 16px 40px; }
   .page-head h1 { font-size: 24px; }
   .section-head, .section-body, .section-foot { padding-left: 16px; padding-right: 16px; }
@@ -253,7 +254,6 @@ a:hover { color: #0B5D56; }
   .hero-sub { font-size: 16px; }
   .search .field, .search .btn { flex-basis: 100%; }
   .how, .owners-inner { padding-left: 16px; padding-right: 16px; }
-  .site-foot { padding: 20px 16px; }
   .auth-brand { padding: 32px 16px 24px; }
   .auth-panel { padding: 24px 16px 32px; }
   .auth-card { padding: 22px 18px; }

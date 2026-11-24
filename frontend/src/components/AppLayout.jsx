@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
-import { ROLES, findNavItem, initials } from '../roles'
+import { ROLES, SIGN_IN, findNavItem, initials } from '../roles'
+import { useAsync } from '../hooks/useAsync'
+import { NOTIFICATIONS_CHANGED, unreadCount } from '../services/notificationService'
 import BrandLogo from './BrandLogo'
 import Icon from './Icon'
 
+// Each page renders its own AppLayout, so the previous path is remembered here (for focus on navigation).
+let lastPath = null
+
 /**
- * Shared shell for signed-in pages: teal top bar, role sidebar, breadcrumbs, page header.
- * Breadcrumbs are built from the sidebar (Home › Group › Page) unless `crumbs` is passed.
+ * Shared shell for signed-in pages: teal top bar (navy text), role sidebar grouped by module with
+ * the current page highlighted, breadcrumbs, and the page header (title, one-line description, actions).
+ *
+ * Breadcrumbs come from the sidebar: Home › Group › Page. On a detail page (e.g. /player/courts/5)
+ * the parent item becomes a link and the page title is added at the end, unless `crumbs` is passed.
+ * On phones the sidebar stacks above the content and opens with the menu button.
  */
 export default function AppLayout({ title, description, actions, crumbs, narrow, children }) {
   const { user, logout } = useAuth()
@@ -15,22 +24,31 @@ export default function AppLayout({ title, description, actions, crumbs, narrow,
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const cfg = ROLES[user.role]
+  const match = findNavItem(user.role, pathname)
 
-  useEffect(() => setMenuOpen(false), [pathname])
   useEffect(() => {
-    if (!menuOpen) return
-    const onKey = (e) => e.key === 'Escape' && setMenuOpen(false)
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [menuOpen])
+    setMenuOpen(false)
+    window.scrollTo(0, 0)
+    // After moving to another page (not on first load), put keyboard/screen-reader focus on the new content.
+    if (lastPath !== null && lastPath !== pathname) document.getElementById('main')?.focus({ preventScroll: true })
+    lastPath = pathname
+  }, [pathname])
+  useEffect(() => { document.title = title ? `${title} · CourtConnect` : 'CourtConnect' }, [title])
 
-  const trail = crumbs ?? defaultCrumbs(cfg, findNavItem(user.role, pathname), pathname)
+  const trail = crumbs ?? defaultCrumbs(cfg, match, pathname, title)
   const notifPath = cfg.groups.flatMap((g) => g.items).find((i) => i.icon === 'bell')?.path
+  const unread = useAsync(() => (cfg.showBell ? unreadCount() : Promise.resolve(0)), [user.role, pathname])
+  const count = unread.status === 'ready' ? unread.data : 0
+  useEffect(() => {
+    window.addEventListener(NOTIFICATIONS_CHANGED, unread.reload)
+    return () => window.removeEventListener(NOTIFICATIONS_CHANGED, unread.reload)
+  }, [unread.reload])
 
-  const signOut = () => { logout(); navigate('/login', { replace: true }) }
+  const signOut = () => { logout(); navigate(SIGN_IN, { replace: true }) }
 
   return (
     <div className="shell">
+      <a className="skip-link" href="#main">Skip to main content</a>
       <header className="topbar">
         <button type="button" className="iconbtn menu-btn" aria-label={menuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={menuOpen} aria-controls="side-nav" onClick={() => setMenuOpen((o) => !o)}>
@@ -39,7 +57,11 @@ export default function AppLayout({ title, description, actions, crumbs, narrow,
         <Link to={cfg.home} className="brand-link" aria-label="CourtConnect home"><BrandLogo /></Link>
         <span className="topbar-gap" />
         {cfg.showBell && notifPath && (
-          <Link className="iconbtn" to={notifPath} aria-label="Notifications"><Icon name="bell" size={21} /></Link>
+          <Link className="iconbtn" to={notifPath}
+            aria-label={count ? `Notifications, ${count} unread` : 'Notifications'}>
+            <Icon name="bell" size={21} />
+            {count > 0 && <span className="dot" aria-hidden="true">{count > 9 ? '9+' : count}</span>}
+          </Link>
         )}
         <div className="who">
           <span className="avatar" aria-hidden="true">{initials(user.fullName)}</span>
@@ -55,17 +77,19 @@ export default function AppLayout({ title, description, actions, crumbs, narrow,
           {cfg.groups.map((group) => (
             <div key={group.title}>
               <p className="side-group">{group.title}</p>
-              {group.items.map((item) => (
-                <NavLink key={item.path} to={item.path} end className={({ isActive }) => 'side-link' + (isActive ? ' on' : '')}>
-                  <Icon name={item.icon} size={19} /><span>{item.label}</span>
-                </NavLink>
-              ))}
+              {group.items.map((item) => {
+                const on = match?.item === item
+                return (
+                  <Link key={item.path} to={item.path} className={'side-link' + (on ? ' on' : '')} aria-current={on ? 'page' : undefined}>
+                    <Icon name={item.icon} size={19} /><span>{item.label}</span>
+                  </Link>
+                )
+              })}
             </div>
           ))}
         </nav>
-        {menuOpen && <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden="true" />}
 
-        <main className={'page' + (narrow ? ' page-narrow' : '')}>
+        <main id="main" tabIndex={-1} className={'page' + (narrow ? ' page-narrow' : '')}>
           <nav aria-label="Breadcrumb" className="crumbs">
             <ol>
               {trail.map((c, i) => {
@@ -92,7 +116,11 @@ export default function AppLayout({ title, description, actions, crumbs, narrow,
   )
 }
 
-function defaultCrumbs(cfg, match, pathname) {
+function defaultCrumbs(cfg, match, pathname, title) {
   if (pathname === cfg.home || !match) return [{ label: cfg.homeLabel }]
-  return [{ label: cfg.homeLabel, to: cfg.home }, { label: match.group.title }, { label: match.item.label }]
+  const base = [{ label: cfg.homeLabel, to: cfg.home }, { label: match.group.title }]
+  const onItem = pathname.replace(/\/+$/, '') === match.item.path
+  return onItem
+    ? [...base, { label: match.item.label }]
+    : [...base, { label: match.item.label, to: match.item.path }, { label: title }]
 }

@@ -1,24 +1,18 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { api, getToken, setToken, SESSION_ENDED } from './api'
 import { AuthCtx } from './auth'
-import { ROLES, homeFor } from './roles'
+import { ROLES, SIGN_IN, homeFor } from './roles'
+import { ROLE_ROUTES } from './routes'
 import RequireRole from './components/RequireRole'
 import EmptyState from './components/EmptyState'
+import { ToastProvider } from './components/Toast'
 import Landing from './pages/Landing'
 import SignIn from './pages/auth/SignIn'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
-import ComingSoon from './pages/ComingSoon'
-import Profile from './pages/Profile'
-import PlayerHome from './pages/player/PlayerHome'
-import FacilityDashboard from './pages/facility/FacilityDashboard'
-import AdminDashboard from './pages/admin/AdminDashboard'
 
-const HOME_PAGES = { PLAYER: PlayerHome, FACILITY_ADMIN: FacilityDashboard, SYSTEM_ADMIN: AdminDashboard }
-// Sidebar items with a `page` key (see roles.js) use these; every other item shows "Coming soon".
-const BUILT_PAGES = { profile: Profile }
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -67,36 +61,36 @@ export default function App() {
     )
   }
 
-  const home = user ? homeFor(user.role) : '/login'
+  const home = user ? homeFor(user.role) : SIGN_IN
 
   return (
     <AuthCtx.Provider value={{ user, login, logout, updateUser, notice, clearNotice: () => setNotice(null) }}>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={user ? <Navigate to={home} replace /> : <SignIn />} />
-        <Route path="/register" element={user ? <Navigate to={home} replace /> : <Register />} />
-        <Route path="/forgot-password" element={user ? <Navigate to={home} replace /> : <ForgotPassword />} />
-        {/* Open even when signed in: the link may be clicked in a browser that has a session. */}
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/dashboard"element={<Navigate to={home} replace />} />
+      <ToastProvider>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path={SIGN_IN} element={user ? <Navigate to={home} replace /> : <SignIn />} />
+          <Route path="/login" element={<Navigate to={SIGN_IN} replace />} /> {/* old address */}
+          <Route path="/admin/signin" element={user ? <Navigate to={home} replace /> : <SignIn admin />} /> {/* login only, for administrators */}
+          <Route path="/register" element={user ? <Navigate to={home} replace /> : <Register />} />
+          <Route path="/forgot-password" element={user ? <Navigate to={home} replace /> : <ForgotPassword />} />
+          {/* Open even when signed in: the link may be clicked in a browser that has a session. */}
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/dashboard" element={<Navigate to={home} replace />} />
 
-        {Object.entries(ROLES).map(([role, cfg]) => {
-          const Home = HOME_PAGES[role]
-          const others = cfg.groups.flatMap((g) => g.items).filter((i) => i.path !== cfg.home)
-          return (
+          {/* Signed-in pages. Not signed in → /signin; another role → that role's own dashboard. */}
+          {Object.entries(ROLES).map(([role, cfg]) => (
             <Route key={role} path={cfg.home} element={<RequireRole role={role} />}>
-              <Route index element={<Home />} />
-              {others.map((i) => {
-                const Page = BUILT_PAGES[i.page] ?? ComingSoon
-                return <Route key={i.path} path={i.path.slice(cfg.home.length + 1)} element={<Page />} />
+              {ROLE_ROUTES[role].map(({ index, path, Page }) => {
+                const el = <Suspense fallback={<div className="boot" role="status">Loading…</div>}><Page /></Suspense>
+                return index ? <Route key="index" index element={el} /> : <Route key={path} path={path} element={el} />
               })}
               <Route path="*" element={<Navigate to={cfg.home} replace />} />
             </Route>
-          )
-        })}
+          ))}
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ToastProvider>
     </AuthCtx.Provider>
   )
 }

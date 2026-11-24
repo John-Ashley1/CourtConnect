@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { api, setToken } from '../api'
-import Field from './Field'
 import Icon from './Icon'
+import PasswordInput from './PasswordInput'
+import PasswordStrengthMeter from './PasswordStrengthMeter'
+import { newPasswordError, PASSWORD_MAX } from '../utils/passwordStrength'
 
 const EMPTY = { currentPassword: '', newPassword: '', confirmPassword: '' }
 
-/** Same rules as the backend (ChangePasswordRequest / UserService); the backend is still the final check. */
+/** Same rules as the backend (ChangePasswordRequest + @StrongPassword / UserService); the backend is still the final check. */
 function validate(f) {
   const err = {}
   if (!f.currentPassword) err.currentPassword = 'Enter your current password.'
-  if (!f.newPassword) err.newPassword = 'Enter a new password.'
-  else if (f.newPassword.length < 8 || f.newPassword.length > 72) err.newPassword = 'New password must be 8 to 72 characters.'
+  const pwErr = newPasswordError(f.newPassword, 'Enter a new password.')
+  if (pwErr) err.newPassword = pwErr
   else if (f.newPassword === f.currentPassword) err.newPassword = 'Choose a password different from your current one.'
   if (!f.confirmPassword) err.confirmPassword = 'Re-enter your new password.'
   else if (f.confirmPassword !== f.newPassword) err.confirmPassword = 'Passwords don’t match.'
@@ -26,7 +28,6 @@ export default function ChangePasswordCard() {
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null) // { ok, message }
-  const [show, setShow] = useState(false)
 
   const set = (k) => (e) => {
     setForm({ ...form, [k]: e.target.value })
@@ -48,7 +49,6 @@ export default function ChangePasswordCard() {
       })
       setToken(r.token) // the old token no longer works
       setForm(EMPTY)
-      setShow(false)
       setResult({ ok: true, message: r.message })
     } catch (ex) {
       if (Object.keys(ex.fieldErrors).length) setErrors(ex.fieldErrors)
@@ -58,7 +58,6 @@ export default function ChangePasswordCard() {
     }
   }
 
-  const type = show ? 'text' : 'password'
   const filled = form.currentPassword || form.newPassword || form.confirmPassword
 
   return (
@@ -79,22 +78,20 @@ export default function ChangePasswordCard() {
       )}
 
       <div className="form-grid">
-        <Field id="pw-current" label="Current password" type={type} autoComplete="current-password"
+        <PasswordInput id="pw-current" label="Current password" autoComplete="current-password"
           value={form.currentPassword} onChange={set('currentPassword')} error={errors.currentPassword} />
         <div className="grid-spacer" aria-hidden="true" />
-        <Field id="pw-new" label="New password" type={type} autoComplete="new-password" maxLength={72}
-          hint="At least 8 characters." value={form.newPassword} onChange={set('newPassword')} error={errors.newPassword} />
-        <Field id="pw-confirm" label="Confirm new password" type={type} autoComplete="new-password" maxLength={72}
+        <PasswordInput id="pw-new" label="New password" autoComplete="new-password" maxLength={PASSWORD_MAX}
+          value={form.newPassword} onChange={set('newPassword')} error={errors.newPassword}
+          extra={<PasswordStrengthMeter value={form.newPassword} />} />
+        <PasswordInput id="pw-confirm" label="Confirm new password" autoComplete="new-password" maxLength={PASSWORD_MAX}
           value={form.confirmPassword} onChange={set('confirmPassword')} error={errors.confirmPassword} />
       </div>
 
-      <label className="check check-sm">
-        <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} /> Show passwords
-      </label>
       </div>
 
       <footer className="section-foot">
-        <span className="muted foot-note"><Icon name="shield" size={16} /> Use at least 8 characters. Don’t reuse a password from another site.</span>
+        <span className="muted foot-note"><Icon name="shield" size={16} /> Use 8+ characters with a letter and a number. Don’t reuse a password from another site.</span>
         <div className="row-start">
           <button className="btn sec" type="button" disabled={busy || !filled}
             onClick={() => { setForm(EMPTY); setErrors({}); setResult(null) }}>Cancel</button>

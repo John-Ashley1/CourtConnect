@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../../api'
 import { useAuth } from '../../auth'
-import Field from '../../components/Field'
+import PasswordInput from '../../components/PasswordInput'
+import PasswordStrengthMeter from '../../components/PasswordStrengthMeter'
+import { newPasswordError, PASSWORD_MAX } from '../../utils/passwordStrength'
 import AuthLayout, { ErrorBanner } from './AuthLayout'
 
 /** Step 2 of forgot password: opened from the link (/reset-password?token=…). */
@@ -15,14 +17,13 @@ export default function ResetPassword() {
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState(null) // { message, offline, badLink }
   const [busy, setBusy] = useState(false)
-  const [show, setShow] = useState(false)
 
   const set = (k) => (e) => { setForm({ ...form, [k]: e.target.value }); setErrors({ ...errors, [k]: null }) }
 
   const validate = () => {
     const err = {}
-    if (!form.newPassword) err.newPassword = 'Enter a new password.'
-    else if (form.newPassword.length < 8 || form.newPassword.length > 72) err.newPassword = 'New password must be 8 to 72 characters.'
+    const pwErr = newPasswordError(form.newPassword, 'Enter a new password.')
+    if (pwErr) err.newPassword = pwErr
     if (!form.confirmPassword) err.confirmPassword = 'Re-enter your new password.'
     else if (form.confirmPassword !== form.newPassword) err.confirmPassword = 'Passwords don’t match.'
     return err
@@ -38,7 +39,7 @@ export default function ResetPassword() {
     try {
       const r = await api('/auth/reset-password', { method: 'POST', body: { token, newPassword: form.newPassword } })
       logout(r.message) // every session was signed out; show the message on the sign-in page
-      navigate('/login', { replace: true })
+      navigate('/signin', { replace: true })
     } catch (ex) {
       const { token: tokenErr, ...fieldErrs } = ex.fieldErrors
       if (Object.keys(fieldErrs).length) setErrors(fieldErrs)
@@ -50,18 +51,17 @@ export default function ResetPassword() {
   if (!token) {
     return (
       <AuthLayout mode="reset" title="Reset link incomplete" subtitle="This link is missing its reset code."
-        footer={<Link to="/login">Back to sign in</Link>}>
+        footer={<Link to="/signin">Back to sign in</Link>}>
         <ErrorBanner>Open the link from your email again, or request a new one.</ErrorBanner>
         <Link className="btn pri auth-wide" to="/forgot-password">Request a new link</Link>
       </AuthLayout>
     )
   }
 
-  const type = show ? 'text' : 'password'
   return (
     <AuthLayout mode="reset" title="Choose a new password"
       subtitle="Pick a strong password you don’t use anywhere else. You’ll be signed out on all devices."
-      footer={<Link to="/login">Back to sign in</Link>}>
+      footer={<Link to="/signin">Back to sign in</Link>}>
       {serverError && (
         <ErrorBanner offline={serverError.offline}>
           {serverError.message}
@@ -69,13 +69,11 @@ export default function ResetPassword() {
         </ErrorBanner>
       )}
       <form className="auth-form" onSubmit={submit} noValidate>
-        <Field id="rp-new" label="New password" type={type} autoComplete="new-password" maxLength={72} autoFocus
-          hint="At least 8 characters." value={form.newPassword} onChange={set('newPassword')} error={errors.newPassword} />
-        <Field id="rp-confirm" label="Confirm new password" type={type} autoComplete="new-password" maxLength={72}
+        <PasswordInput id="rp-new" label="New password" autoComplete="new-password" maxLength={PASSWORD_MAX} autoFocus
+          value={form.newPassword} onChange={set('newPassword')} error={errors.newPassword}
+          extra={<PasswordStrengthMeter value={form.newPassword} />} />
+        <PasswordInput id="rp-confirm" label="Confirm new password" autoComplete="new-password" maxLength={PASSWORD_MAX}
           value={form.confirmPassword} onChange={set('confirmPassword')} error={errors.confirmPassword} />
-        <label className="check check-sm">
-          <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} /> Show passwords
-        </label>
         <button className="btn pri" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Reset password'}</button>
       </form>
     </AuthLayout>

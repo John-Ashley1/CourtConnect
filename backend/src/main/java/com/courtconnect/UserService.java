@@ -23,16 +23,14 @@ public class UserService {
     String name = r.fullName().trim();
     if (name.length() < 2 || name.length() > 100) throw new ApiException(HttpStatus.BAD_REQUEST, "fullName", "Full name must be 2 to 100 characters.");
 
-    String email = r.email().trim().toLowerCase();
-    if (!email.equals(u.getEmail()) && users.existsByEmail(email))
-      throw new ApiException(HttpStatus.CONFLICT, "email", "An account with this email already exists.");
+    // Email is permanent: it isn't part of the request and is never changed here.
 
     // Optional; spaces and dashes are allowed when typing ("0917 123 4567") and removed before saving.
     String phone = r.phoneNo() == null ? "" : r.phoneNo().replaceAll("[\\s-]", "");
     if (!phone.isEmpty() && !PH_MOBILE.matcher(phone).matches())
       throw new ApiException(HttpStatus.BAD_REQUEST, "phoneNo", "Enter a mobile number like 09171234567, or leave it blank.");
 
-    u.setFullName(name); u.setEmail(email); u.setPhoneNo(phone.isEmpty() ? null : phone);
+    u.setFullName(name); u.setPhoneNo(phone.isEmpty() ? null : phone);
     return ProfileDto.of(users.save(u));
   }
 

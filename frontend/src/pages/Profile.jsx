@@ -8,7 +8,6 @@ import Field from '../components/Field'
 import Icon from '../components/Icon'
 import ChangePasswordCard from '../components/ChangePasswordCard'
 
-const EMAIL_RE = /^\S+@\S+\.\S+$/
 const PH_MOBILE = /^09\d{9}$/
 
 /** Same rules as the backend (UserService); the backend is still the final check. */
@@ -17,8 +16,6 @@ function validate(f) {
   const name = f.fullName.trim()
   if (!name) err.fullName = 'Enter your full name.'
   else if (name.length < 2 || name.length > 100) err.fullName = 'Full name must be 2 to 100 characters.'
-  if (!f.email.trim()) err.email = 'Enter your email address.'
-  else if (!EMAIL_RE.test(f.email.trim())) err.email = 'Enter a valid email address, like name@example.com.'
   const phone = f.phoneNo.replace(/[\s-]/g, '')
   if (phone && !PH_MOBILE.test(phone)) err.phoneNo = 'Enter a mobile number like 09171234567, or leave it blank.'
   return err
@@ -30,7 +27,8 @@ function memberSince(iso) {
   return d && !isNaN(d) ? d.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' }) : null
 }
 
-const toForm = (p) => ({ fullName: p.fullName, email: p.email, phoneNo: p.phoneNo ?? '' })
+// Email isn't part of the editable form: it's permanent and shown read-only.
+const toForm = (p) => ({ fullName: p.fullName, phoneNo: p.phoneNo ?? '' })
 
 /** Profile (FR-005) for every role. Reads and saves /api/users/me — always the signed-in user. */
 export default function Profile() {
@@ -70,10 +68,10 @@ export default function Profile() {
     try {
       const p = await api('/users/me', {
         method: 'PUT',
-        body: { fullName: form.fullName.trim(), email: form.email.trim(), phoneNo: form.phoneNo.replace(/[\s-]/g, '') },
+        body: { fullName: form.fullName.trim(), phoneNo: form.phoneNo.replace(/[\s-]/g, '') }, // no email: it can't change
       })
       setSaved(p); setForm(toForm(p))
-      updateUser({ fullName: p.fullName, email: p.email }) // refresh the name in the top bar
+      updateUser({ fullName: p.fullName }) // refresh the name in the top bar
       setResult({ ok: true, message: 'Profile updated.' })
     } catch (ex) {
       if (Object.keys(ex.fieldErrors).length) setErrors(ex.fieldErrors)
@@ -135,8 +133,8 @@ export default function Profile() {
             <div className="form-grid">
               <Field id="pf-name" label="Full name" autoComplete="name" maxLength={100}
                 value={form.fullName} onChange={set('fullName')} error={errors.fullName} />
-              <Field id="pf-email" label="Email" type="email" autoComplete="email"
-                value={form.email} onChange={set('email')} error={errors.email} />
+              <Field id="pf-email" label="Email" type="email" readOnly aria-readonly="true" className="inp inp-readonly"
+                value={saved.email} hint="Email can't be changed." />
               <Field id="pf-phone" label="Mobile number" optional placeholder="09XX XXX XXXX" autoComplete="tel" inputMode="tel"
                 value={form.phoneNo} onChange={set('phoneNo')} error={errors.phoneNo} />
               <div className="field">

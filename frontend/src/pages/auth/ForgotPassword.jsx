@@ -36,7 +36,7 @@ export default function ForgotPassword() {
   if (sent) {
     return (
       <AuthLayout mode="reset" title="Check your email" subtitle={<>We sent instructions to <b>{email.trim()}</b>.</>}
-        footer={<Link to="/login">Back to sign in</Link>}>
+        footer={<Link to="/signin">Back to sign in</Link>}>
         <div className="banner bn-ok" role="status" style={{ marginTop: 16 }}>
           <Icon name="check" /><span>{sent}</span>
         </div>
@@ -51,7 +51,7 @@ export default function ForgotPassword() {
   return (
     <AuthLayout mode="reset" title="Forgot your password?"
       subtitle="Enter the email you use for CourtConnect and we’ll send you a link to reset it."
-      footer={<>Remembered it? <Link to="/login">Back to sign in</Link></>}>
+      footer={<>Remembered it? <Link to="/signin">Back to sign in</Link></>}>
       {serverError && <ErrorBanner offline={serverError.offline}>{serverError.message}</ErrorBanner>}
       <form className="auth-form" onSubmit={submit} noValidate>
         <Field id="fp-email" label="Email" type="email" placeholder="you@example.com" autoComplete="email" autoFocus

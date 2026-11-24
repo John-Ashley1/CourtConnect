@@ -40,7 +40,12 @@ public class ApiExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<Map<String,Object>> invalid(MethodArgumentNotValidException e, HttpServletRequest req){
     Map<String,String> fields = new LinkedHashMap<>();
-    e.getBindingResult().getFieldErrors().forEach(f -> fields.putIfAbsent(f.getField(), f.getDefaultMessage()));
+    // One message per field. "Required" (@NotBlank) wins, so an empty password says "Enter a password."
+    // rather than the strength rule.
+    e.getBindingResult().getFieldErrors().forEach(f -> {
+      if ("NotBlank".equals(f.getCode())) fields.put(f.getField(), f.getDefaultMessage());
+      else fields.putIfAbsent(f.getField(), f.getDefaultMessage());
+    });
     String first = fields.values().stream().findFirst().orElse("Check the form and try again.");
     return respond(HttpStatus.BAD_REQUEST, first, req, fields);
   }

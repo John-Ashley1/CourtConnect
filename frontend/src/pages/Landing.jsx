@@ -39,7 +39,7 @@ export default function Landing() {
     e.preventDefault()
     if (!form.sport) { setError('Choose a sport to search for courts.'); setSearched(''); return }
     if (!user) { setSearched(form.sport); return }
-    navigate(user.role === 'PLAYER' ? '/player/find-courts' : homeFor(user.role))
+    navigate(user.role === 'PLAYER' ? '/player/courts' : homeFor(user.role))
   }
 
   return (
@@ -57,7 +57,7 @@ export default function Landing() {
             <Link className="btn navy" to={homeFor(user.role)}>Go to dashboard</Link>
           ) : (
             <>
-              <Link className="btn sec" to="/login">Sign in</Link>
+              <Link className="btn sec" to="/signin">Sign in</Link>
               <Link className="btn navy" to="/register">Register</Link>
             </>
           )}
@@ -99,7 +99,7 @@ export default function Landing() {
             <div className="banner bn-info search-banner" role="status">
               <Icon name="alert" />
               <span>Sign in or create a free player account to see available slots for <b>{searched}</b> courts.</span>
-              <Link className="btn pri sm" to="/login">Sign in to continue</Link>
+              <Link className="btn pri sm" to="/signin">Sign in to continue</Link>
             </div>
           )}
         </section>
@@ -123,12 +123,11 @@ export default function Landing() {
               <h2>Own or manage a court?</h2>
               <p>Facility administrators list courts, set hours, rates and slot lengths, manage bookings, verify QR check-ins, and see peak-hour reports. Administrator accounts are set up by the CourtConnect system administrator.</p>
             </div>
-            <Link className="btn sec" to="/login">Administrator sign in</Link>
+            <Link className="btn sec" to="/admin/signin">Administrator sign in</Link>
           </div>
         </section>
       </main>
 
-      <footer className="site-foot">© {new Date().getFullYear()} CourtConnect · IT342-G01</footer>
     </div>
   )
 }

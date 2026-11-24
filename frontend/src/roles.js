@@ -1,5 +1,8 @@
-// Navigation and home page for each role the backend returns.
-// Items whose page isn't built yet render the "Coming soon" page (see App.jsx).
+// Sidebar navigation and home page for each role the backend returns (PLAYER, FACILITY_ADMIN, SYSTEM_ADMIN).
+// Groups and labels match docs/ui-prototype. Which component each path renders is in routes.jsx.
+// `match`: extra path prefixes that highlight the item (e.g. checkout belongs to "Find courts").
+
+export const SIGN_IN = '/signin'
 
 export const ROLES = {
   PLAYER: {
@@ -12,15 +15,15 @@ export const ROLES = {
       {
         title: 'Courts & booking',
         items: [
-          { label: 'Find courts', path: '/player/find-courts', icon: 'pin' },
+          { label: 'Find courts', path: '/player/courts', icon: 'pin', match: ['/player/checkout'] },
           { label: 'My bookings', path: '/player/bookings', icon: 'ticket' },
         ],
       },
       {
         title: 'Find players',
         items: [
-          { label: 'Open games', path: '/player/open-games', icon: 'users' },
-          { label: 'Post a game', path: '/player/post-game', icon: 'plus' },
+          { label: 'Open games', path: '/player/games', icon: 'users' },
+          { label: 'Post a game', path: '/player/games/new', icon: 'plus' },
           { label: 'My games', path: '/player/my-games', icon: 'flag' },
         ],
       },
@@ -28,7 +31,7 @@ export const ROLES = {
         title: 'Account',
         items: [
           { label: 'Notifications', path: '/player/notifications', icon: 'bell' },
-          { label: 'Profile', path: '/player/profile', icon: 'user', page: 'profile' },
+          { label: 'Profile', path: '/player/profile', icon: 'user' },
         ],
       },
     ],
@@ -61,7 +64,7 @@ export const ROLES = {
         title: 'Account',
         items: [
           { label: 'Notifications', path: '/facility/notifications', icon: 'bell' },
-          { label: 'Profile', path: '/facility/profile', icon: 'user', page: 'profile' },
+          { label: 'Profile', path: '/facility/profile', icon: 'user' },
         ],
       },
     ],
@@ -80,24 +83,34 @@ export const ROLES = {
           { label: 'Facilities', path: '/admin/facilities', icon: 'building' },
         ],
       },
-      { title: 'Account', items: [{ label: 'Profile', path: '/admin/profile', icon: 'user', page: 'profile' }] },
+      { title: 'Account', items: [{ label: 'Profile', path: '/admin/profile', icon: 'user' }] },
     ],
   },
 }
 
-export const homeFor = (role) => ROLES[role]?.home ?? '/login'
+export const homeFor = (role) => ROLES[role]?.home ?? SIGN_IN
 
-/** The sidebar group and item that match a path, or null. */
+/**
+ * The sidebar group and item a path belongs to: the item whose path (or a `match` prefix) is the
+ * longest prefix of `pathname`. The home path only matches exactly. Returns null if none.
+ */
 export function findNavItem(role, pathname) {
   const cfg = ROLES[role]
   if (!cfg) return null
+  const path = pathname.replace(/\/+$/, '') || '/'
+  let best = null, bestLen = -1
   for (const group of cfg.groups) {
-    const item = group.items.find((i) => i.path === pathname)
-    if (item) return { group, item }
+    for (const item of group.items) {
+      for (const p of [item.path, ...(item.match ?? [])]) {
+        const hit = p === cfg.home ? path === p : path === p || path.startsWith(p + '/')
+        if (hit && p.length > bestLen) { best = { group, item }; bestLen = p.length }
+      }
+    }
   }
-  return null
+  return best
 }
 
 export function initials(name = '') {
-  return name.trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '?'
+  // Letters only, so "[Player Name]" gives "PN", not "[N".
+  return name.replace(/[^\p{L}\s]/gu, '').trim().split(/\s+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '?'
 }

@@ -60,7 +60,7 @@ export default function Facilities() {
       {form !== null && (
         <Card as="form" className="stack mb-16" onSubmit={submit} noValidate
           title={form === 'new' ? 'Register a facility' : 'Edit facility details'}
-          subtitle="The map position will be found from the address with Google Maps.">
+          subtitle="The map position is found from the address (OpenStreetMap) when you save.">
           <div className="form-grid">
             <Input id="fa-name" label="Facility name" placeholder="Facility name" maxLength={100} value={f.name} onChange={set('name')} error={err.name} />
             <Input id="fa-phone" label="Contact number" placeholder="09XX XXX XXXX" inputMode="tel" autoComplete="tel" value={f.phone} onChange={set('phone')} error={err.phone} />
@@ -68,7 +68,7 @@ export default function Facilities() {
             <Input id="fa-city" label="City / municipality" placeholder="e.g. Cebu City" value={f.city} onChange={set('city')} error={err.city} />
           </div>
           <div className="banner bn-info"><Icon name="map" />
-            <span>Finding the address on the map with Google Maps comes in a later increment. Until then, new facilities get an approximate sample position.</span>
+            <span>Include the street and barangay so players are shown the right place. If the map can’t find the address, the facility isn’t saved and you can correct it.</span>
           </div>
           <div className="row-wrap">
             <Button type="submit" busy={busy}>{busy ? 'Saving…' : form === 'new' ? 'Register facility' : 'Save changes'}</Button>
@@ -93,7 +93,7 @@ export default function Facilities() {
                   <Badge tone="ok">Active</Badge>
                 </div>
                 <p className="small">{x.court_count} {x.court_count === 1 ? 'court' : 'courts'} · Contact {x.phone}</p>
-                <p className="muted xsmall">Map coordinates: {x.latitude.toFixed(4)}, {x.longitude.toFixed(4)} (sample)</p>
+                <p className="muted xsmall">Map coordinates: {x.latitude.toFixed(4)}, {x.longitude.toFixed(4)}</p>
                 <div className="row-wrap">
                   <Button size="sm" to={`/facility/courts?facility=${x.facility_id}`}>Manage courts</Button>
                   <Button size="sm" variant="sec" icon="edit" onClick={() => open(x)}>Edit details</Button>

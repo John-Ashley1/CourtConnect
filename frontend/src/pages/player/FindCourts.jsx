@@ -97,7 +97,9 @@ export default function FindCourts() {
               <p className="b" aria-live="polite">{courts.length} {courts.length === 1 ? 'court' : 'courts'} found · {fmtDate(date)}</p>
               {courts.map((c) => (
                 <article key={c.court_id} className="card result">
-                  <div className="ph-box thumb" aria-hidden="true"><Icon name="camera" size={20} />Photo</div>
+                  {c.photo_url
+                    ? <img className="thumb" src={c.photo_url} alt="" style={{ objectFit: 'cover' }} />
+                    : <div className="ph-box thumb" aria-hidden="true"><Icon name="camera" size={20} />Photo</div>}
                   <div className="grow min0">
                     <div className="row-wrap gap-6"><b className="md">{c.court_name}</b><Badge>{c.is_indoor ? 'Indoor' : 'Outdoor'}</Badge></div>
                     <p className="muted small mt-2">{c.facility.name} · {c.distance_km} km away</p>

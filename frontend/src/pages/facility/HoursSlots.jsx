@@ -17,10 +17,16 @@ import { useToast } from '../../components/Toast'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const ORDER = [1, 2, 3, 4, 5, 6, 0] // Monday first
-const HOURS = Array.from({ length: 19 }, (_, i) => 5 + i) // 5 AM … 11 PM
+// Opening/closing choices in minutes from midnight: 5:00 AM … 11:30 PM in 30-minute steps.
+const TIMES = Array.from({ length: 38 }, (_, i) => 300 + i * 30)
 const DURATIONS = [{ value: '30', label: '30 minutes' }, { value: '60', label: '1 hour' }, { value: '90', label: '1 hour 30 minutes' }, { value: '120', label: '2 hours' }]
-const t = (h) => `${String(h).padStart(2, '0')}:00:00`
-const fmtMin = (m) => fmtTime(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:00`)
+/** 450 → '07:30:00' */
+const t = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:00`
+/** '07:30:00' → 450 */
+const toMin = (s) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5))
+const fmtMin = (m) => fmtTime(t(m))
+/** The choices, plus a saved time that isn't on the 30-minute grid (so it still shows correctly). */
+const timeOptions = (current) => (TIMES.includes(current) ? TIMES : [...TIMES, current].sort((a, b) => a - b))
 
 /** facility-hours-slots: per-court weekly hours, slot length, payment limit, live slot calculation. */
 export default function HoursSlots() {
@@ -55,7 +61,7 @@ function HoursForm({ court, courts, onPick, onSaved }) {
   const [lim, setLim] = useState(String(court.payment_hold_minutes ?? 15))
   const [limErr, setLimErr] = useState('')
   const [days, setDays] = useState(() => Object.fromEntries((court.operating_hours ?? []).map((d) => [d.day_of_week, {
-    open: d.is_open, from: Number(d.open_time.slice(0, 2)), to: Number(d.close_time.slice(0, 2)),
+    open: d.is_open, from: toMin(d.open_time), to: toMin(d.close_time),
   }])))
   const [ask, setAsk] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -64,8 +70,8 @@ function HoursForm({ court, courts, onPick, onSaved }) {
   const len = Number(dur)
   let weekly = 0, openDays = 0, leftover = 0
   const rows = ORDER.map((dow) => {
-    const d = days[dow] ?? { open: false, from: 6, to: 22 }
-    const span = (d.to - d.from) * 60
+    const d = days[dow] ?? { open: false, from: 360, to: 1320 }
+    const span = d.to - d.from
     const bad = d.open && span <= 0
     const n = d.open && !bad ? Math.floor(span / len) : 0
     if (d.open && !bad) { weekly += n; openDays++; leftover = Math.max(leftover, span % len) }
@@ -73,7 +79,7 @@ function HoursForm({ court, courts, onPick, onSaved }) {
   })
   const first = rows.find((r) => r.open && !r.bad)
   const preview = []
-  if (first) for (let m = first.from * 60; m + len <= first.to * 60; m += len) preview.push(`${fmtMin(m)}–${fmtMin(m + len)}`)
+  if (first) for (let m = first.from; m + len <= first.to; m += len) preview.push(`${fmtMin(m)}–${fmtMin(m + len)}`)
 
   const save = () => {
     const ok = Number(lim) >= 5 && Number(lim) <= 60 && Number.isInteger(Number(lim))
@@ -119,11 +125,11 @@ function HoursForm({ court, courts, onPick, onSaved }) {
                     <th scope="row">{name}</th>
                     <td><input type="checkbox" className="cb" aria-label={`Open on ${name}`} checked={r.open} onChange={(e) => upd(r.dow, 'open', e.target.checked)} /></td>
                     <td><select className="inp" aria-label={`${name} opening time`} value={r.from} disabled={!r.open} onChange={(e) => upd(r.dow, 'from', Number(e.target.value))}>
-                      {HOURS.map((h) => <option key={h} value={h}>{fmtTime(t(h))}</option>)}</select></td>
+                      {timeOptions(r.from).map((m) => <option key={m} value={m}>{fmtMin(m)}</option>)}</select></td>
                     <td>
                       <select className={'inp' + (r.bad ? ' bad' : '')} aria-label={`${name} closing time`} aria-invalid={r.bad}
                         aria-describedby={r.bad ? `hs-bad-${r.dow}` : undefined} value={r.to} disabled={!r.open} onChange={(e) => upd(r.dow, 'to', Number(e.target.value))}>
-                        {HOURS.map((h) => <option key={h} value={h}>{fmtTime(t(h))}</option>)}</select>
+                        {timeOptions(r.to).map((m) => <option key={m} value={m}>{fmtMin(m)}</option>)}</select>
                       {r.bad && <p className="ferr" id={`hs-bad-${r.dow}`}>Closing must be after opening.</p>}
                     </td>
                     <td className="num"><b>{!r.open ? 'Closed' : r.bad ? '—' : r.n}</b></td>

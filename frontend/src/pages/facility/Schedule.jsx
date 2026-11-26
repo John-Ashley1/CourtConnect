@@ -4,6 +4,7 @@ import { STATUS } from '../../constants/status'
 import { useAsync } from '../../hooks/useAsync'
 import { listMyFacilities } from '../../services/facilityService'
 import { blockSlot, getFacilitySchedule, unblockSlot } from '../../services/scheduleService'
+import { confirmFacilityBooking } from '../../services/facilityBookingService'
 import { addDays, fmtDate, fmtSlot, fmtTime, isoDate, parseDate } from '../../utils/format'
 import AppLayout from '../../components/AppLayout'
 import AsyncContent from '../../components/AsyncContent'
@@ -43,6 +44,14 @@ export default function Schedule() {
   const selCourt = courts.find((c) => c.slots.some((s) => s.slot_id === selId))
   const sel = selCourt?.slots.find((s) => s.slot_id === selId)
   const started = sel && new Date(`${sel.slot_date}T${sel.start_time}`).getTime() <= Date.now()
+
+  const confirmHeld = async () => {
+    setBusy(true)
+    try {
+      const b = await confirmFacilityBooking(sel.booking.booking_id)
+      toast(`${b.qr_code} confirmed. ${b.player?.full_name ?? 'The player'} was notified.`)
+    } catch (ex) { toast(ex.message, 'err') } finally { setBusy(false); schedQ.reload() }
+  }
 
   const apply = async () => {
     setBusy(true)
@@ -139,7 +148,10 @@ export default function Schedule() {
                   </>}
                   {(sel.status === 'BOOKED' || sel.status === 'PENDING') && sel.booking && <>
                     <p className="small mt-12">{sel.status === 'PENDING' ? 'Held for' : 'Booked by'} <b>{sel.booking.player?.full_name}</b><br />Ref {sel.booking.qr_code}</p>
-                    {sel.status === 'PENDING' && <p className="hint">Waiting for payment. It’s released automatically if unpaid.</p>}
+                    {sel.status === 'PENDING' && <>
+                      <p className="hint">Waiting for confirmation. It’s released automatically if not confirmed in time.</p>
+                      <Button size="sm" className="mt-8" busy={busy} onClick={confirmHeld}>Confirm booking</Button>
+                    </>}
                     <p className="hint">Blocked and booked slots can’t be booked by players.</p>
                     <Button variant="sec" size="sm" className="mt-8" to={`/facility/bookings?q=${sel.booking.qr_code}&period=all`}>Open booking record</Button>
                   </>}

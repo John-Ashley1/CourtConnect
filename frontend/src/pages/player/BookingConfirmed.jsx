@@ -24,16 +24,16 @@ export default function BookingConfirmed() {
 
   return (
     <AppLayout title={q.status === 'ready' && !confirmed ? 'Booking details' : 'You’re booked!'}
-      description={confirmed ? 'Payment verified. Here is your QR confirmation and booking details.' : 'Your booking confirmation and QR code.'}>
+      description={confirmed ? 'Your booking is confirmed. Here is your QR code and booking details.' : 'Your booking confirmation and QR code.'}>
       <AsyncContent state={q} loading={<SkeletonPage kind="cards" rows={2} />} errorTitle="Can’t load your confirmation"
         reassurance="Your booking is still confirmed. We just can’t show it right now.">
         {(b) => b.status !== 'CONFIRMED' ? (
-          <EmptyState icon="ticket" title={b.status === 'PENDING' ? 'This booking isn’t paid yet' : 'Confirmation not available'}
+          <EmptyState icon="ticket" title={b.status === 'PENDING' ? 'This booking isn’t confirmed yet' : 'Confirmation not available'}
             action={b.status === 'PENDING'
-              ? <Button to={`/player/checkout/${b.booking_id}`}>Pay now</Button>
+              ? <Button to={`/player/checkout/${b.booking_id}`}>View booking</Button>
               : <Button to="/player/bookings">Go to my bookings</Button>}>
             {b.status === 'PENDING'
-              ? `Booking ${b.qr_code} is waiting for payment. Its QR code appears once PayMongo confirms the payment.`
+              ? `Booking ${b.qr_code} is waiting to be paid or confirmed. Its QR code appears once it’s confirmed.`
               : `Booking ${b.qr_code} is ${b.status.toLowerCase()}, so there is no QR code to show.`}
           </EmptyState>
         ) : (
@@ -56,14 +56,22 @@ export default function BookingConfirmed() {
                   <div><dt>Address</dt><dd>{areaOf(b.facility.address)}</dd></div>
                 </dl>
               </Card>
-              <Card title="Payment">
+              {!b.payment ? (
+                <Card title="Payment">
+                  <dl className="facts-grid">
+                    <div><dt>Booking fee</dt><dd>{peso(b.total_fee)}</dd></div>
+                    <div><dt>Confirmed by</dt><dd>{b.facility.name}</dd></div>
+                  </dl>
+                  <p className="hint">Payment is arranged directly with the facility (contact {b.facility.phone}).</p>
+                </Card>
+              ) : <Card title="Payment">
                 <dl className="facts-grid">
                   <div><dt>Amount paid</dt><dd>{peso(b.payment?.amount ?? b.total_fee)}</dd></div>
                   <div><dt>Method</dt><dd>{b.payment?.method ? `${b.payment.method} via PayMongo` : 'PayMongo'}</dd></div>
                   <div><dt>Payment status</dt><dd>{b.payment ? <StatusBadge kind="payment" status={b.payment.status} /> : <Badge>Unknown</Badge>}</dd></div>
                   <div><dt>PayMongo reference</dt><dd>{b.payment?.paymongo_reference ?? '—'}</dd></div>
                 </dl>
-              </Card>
+              </Card>}
               <div className="banner bn-info"><Icon name="bell" />
                 <span>Push reminders before your game and the weather forecast for this slot arrive in a later increment.</span>
               </div>

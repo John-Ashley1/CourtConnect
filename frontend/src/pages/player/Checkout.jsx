@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useAsync } from '../../hooks/useAsync'
 import { useCountdown } from '../../hooks/useCountdown'
 import { cancelBooking, getBooking } from '../../services/bookingService'
-import { PAYMENT_METHODS, startPayment } from '../../services/paymentService'
+import { PAYMENT_METHODS, getPaymentConfig, startPayment, verifyPayment } from '../../services/paymentService'
 import { fmtCountdown, fmtDateLong, fmtTime, fmtTimeRange, peso } from '../../utils/format'
 import AppLayout from '../../components/AppLayout'
 import AsyncContent from '../../components/AsyncContent'
@@ -20,37 +20,74 @@ import { useToast } from '../../components/Toast'
 /** player-checkout: 15-minute hold countdown, payment method, PayMongo (placeholder), cancel. */
 export default function Checkout() {
   const { bookingId } = useParams()
-  const q = useAsync(() => getBooking(bookingId), [bookingId])
+  const q = useAsync(() => Promise.all([getBooking(bookingId), getPaymentConfig()])
+    .then(([booking, cfg]) => ({ booking, online: !!cfg.online_payment })), [bookingId])
+  const online = q.data?.online ?? true
   return (
-    <AppLayout title="Review and pay" description="Check the details and pay the booking fee to confirm your slot.">
+    <AppLayout title={online ? 'Review and pay' : 'Your booking'}
+      description={online ? 'Check the details and pay the booking fee to confirm your slot.' : 'Your slot is held while the facility confirms your booking.'}>
       <AsyncContent state={q} loading={<SkeletonPage kind="cards" rows={2} />} errorTitle="Can’t load this booking"
         reassurance="If you already started paying, you haven’t been charged twice.">
-        {(b) => <CheckoutBody key={b.booking_id} initial={b} />}
+        {({ booking, online }) => <CheckoutBody key={booking.booking_id} initial={booking} online={online} />}
       </AsyncContent>
     </AppLayout>
   )
 }
 
-function CheckoutBody({ initial }) {
+const VERIFY_TRIES = 6
+const VERIFY_EVERY_MS = 2500
+
+function CheckoutBody({ initial, online }) {
   const toast = useToast()
+  const [params, setParams] = useSearchParams()
+  // Back from PayMongo: ?paid=1 (finished paying) or ?cancelled=1 (left PayMongo's page).
+  const returned = params.get('paid') ? 'paid' : params.get('cancelled') ? 'cancelled' : null
   const [b, setB] = useState(initial)
-  // hold → waiting (at PayMongo) → paid | failed (back to hold rules); also expired / cancelled
-  const [phase, setPhase] = useState(initial.status === 'PENDING' ? 'hold' : null)
+  // hold → waiting (checking with PayMongo) → paid | failed (back to hold rules); also expired / cancelled
+  const [phase, setPhase] = useState(returned === 'paid' ? 'waiting' : initial.status === 'PENDING' ? (returned === 'cancelled' ? 'failed' : 'hold') : null)
   const [method, setMethod] = useState(initial.payment?.method ?? '')
   const [methodErr, setMethodErr] = useState('')
   const [ask, setAsk] = useState(null) // 'pay' | 'cancel'
   const [busy, setBusy] = useState(false)
+  const [stillWaiting, setStillWaiting] = useState(false)
   const secs = useCountdown(b.status === 'PENDING' ? b.payment_deadline : null)
   const active = phase === 'hold' || phase === 'waiting' || phase === 'failed'
+  const alive = useRef(true)
+  useEffect(() => () => { alive.current = false }, [])
 
-  // Hold ran out → the server expires it; reflect that here.
+  // Ask the server (which asks PayMongo) whether the payment went through; retry a few times while PayMongo settles.
+  const checkPayment = async () => {
+    setPhase('waiting'); setStillWaiting(false)
+    for (let i = 0; i < VERIFY_TRIES && alive.current; i++) {
+      try {
+        const r = await verifyPayment(b.booking_id)
+        if (!alive.current) return
+        setB(r)
+        if (r.status === 'CONFIRMED') { setPhase('paid'); return }
+        if (r.status !== 'PENDING') { setPhase(r.status === 'EXPIRED' ? 'expired' : 'cancelled'); return }
+      } catch (ex) {
+        if (!ex.offline) { toast(ex.message, 'err'); break }
+      }
+      await new Promise((res) => setTimeout(res, VERIFY_EVERY_MS))
+    }
+    if (alive.current) setStillWaiting(true)
+  }
+
   useEffect(() => {
-    if (active && secs === 0) {
+    if (!returned) return
+    setParams({}, { replace: true }) // so a refresh doesn't repeat it
+    if (returned === 'paid') checkPayment()
+    else if (initial.status === 'PENDING') toast('You left PayMongo before paying. You haven’t been charged; your slot is still held.')
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Hold ran out → the server expires it; reflect that here. (Not while checking a payment: a late payment can still confirm.)
+  useEffect(() => {
+    if (active && phase !== 'waiting' && secs === 0) {
       setPhase('expired')
       setB((x) => ({ ...x, status: 'EXPIRED' }))
       getBooking(b.booking_id).then(setB).catch(() => {})
     }
-  }, [secs, active]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [secs, active, phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (phase === null) {
     // Opened a booking that isn't waiting for payment any more.
@@ -98,13 +135,16 @@ function CheckoutBody({ initial }) {
         {active && (
           <div className="banner bn-warn" role="timer" aria-live="off">
             <Icon name="clock" />
-            <span>This slot is held for you as <b>Pending</b>. Complete payment within{' '}
-              <b className="tabular lg">{fmtCountdown(secs)}</b> or it will be released.</span>
+            {online
+              ? <span>This slot is held for you as <b>Pending</b>. Complete payment within{' '}
+                  <b className="tabular lg">{fmtCountdown(secs)}</b> or it will be released.</span>
+              : <span>This slot is held for you as <b>Pending</b> while {b.facility.name} confirms your booking. If it isn’t confirmed within{' '}
+                  <b className="tabular lg">{fmtCountdown(secs)}</b>, the slot is released.</span>}
           </div>
         )}
         {phase === 'expired' && (
           <div className="banner bn-err" role="alert"><Icon name="clock" />
-            <span>Payment time ran out. Booking {b.qr_code} is now <b>Expired</b> and the slot was released for others.</span>
+            <span>{online ? 'Payment time ran out.' : 'The facility didn’t confirm it in time.'} Booking {b.qr_code} is now <b>Expired</b> and the slot was released for others.</span>
             <Button variant="sec" size="sm" to={`/player/courts/${b.court.court_id}?date=${b.slot.slot_date}`}>Pick a slot again</Button>
           </div>
         )}
@@ -126,7 +166,19 @@ function CheckoutBody({ initial }) {
           </div>
         )}
 
-        <Card title="Payment method" subtitle="Paid securely through PayMongo. CourtConnect never stores your card details.">
+        {!online && (
+          <Card title="Waiting for the facility" subtitle="Online payment isn’t available yet.">
+            <p className="small mt-8">
+              {b.facility.name} reviews new bookings and confirms them. Arrange payment of <b>{peso(b.total_fee)}</b> with the facility
+              (contact {b.facility.phone}). Once it’s confirmed, the booking shows as <b>Confirmed</b> in My bookings with its QR code.
+            </p>
+            <div className="row-wrap mt-16">
+              <Button variant="sec" to="/player/bookings">Go to my bookings</Button>
+              <Button variant="sec" onClick={() => setAsk('cancel')} disabled={!canAct}>Cancel and release slot</Button>
+            </div>
+          </Card>
+        )}
+        {online && <Card title="Payment method" subtitle="Paid securely through PayMongo. CourtConnect never stores your card details.">
           <fieldset className="pay-methods" aria-describedby={methodErr ? 'pm-err' : undefined} disabled={!canAct}>
             <legend className="sr-only">Payment method</legend>
             {PAYMENT_METHODS.map((m) => (
@@ -140,8 +192,11 @@ function CheckoutBody({ initial }) {
           {methodErr && <p className="ferr" id="pm-err" role="alert">{methodErr}</p>}
 
           {phase === 'waiting' && (
-            <Placeholder icon="card" title="Waiting for PayMongo to confirm your payment…" style={{ marginTop: 16 }}>
-              PayMongo checkout connects in a later increment. In the live app you finish paying on PayMongo’s page.
+            <Placeholder icon="card" title={stillWaiting ? 'PayMongo hasn’t confirmed your payment yet' : 'Checking your payment with PayMongo…'} style={{ marginTop: 16 }}
+              action={stillWaiting && <Button variant="sec" size="sm" onClick={checkPayment}>Check again</Button>}>
+              {stillWaiting
+                ? 'If you finished paying, this can take a minute. You won’t be charged twice.'
+                : 'This usually takes a few seconds. Please don’t close this page.'}
             </Placeholder>
           )}
 
@@ -149,7 +204,7 @@ function CheckoutBody({ initial }) {
             <Button onClick={pay} disabled={!canAct}>Pay {peso(b.total_fee)} with PayMongo</Button>
             <Button variant="sec" onClick={() => setAsk('cancel')} disabled={!canAct}>Cancel and release slot</Button>
           </div>
-        </Card>
+        </Card>}
       </div>
 
       <aside className="split-side">

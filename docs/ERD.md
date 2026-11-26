@@ -1,7 +1,7 @@
 # CourtConnect ERD
 
 Paste the code below into https://mermaid.live to view or export it as PNG/SVG.
-`APP_USER` (table `app_user`) is already implemented in the backend. The other tables are added as each feature is built.
+Implemented so far: `app_user`, `password_reset_token` (Increment 2), and `facility`, `court`, `court_hours`, `time_slot`, `booking`, `payment`, `notification` (Increment 3, see `docs/sql/increment-3.sql`). `OPEN_GAME` and `JOIN_REQUEST` come with Find Players.
 
 ```mermaid
 erDiagram
@@ -11,9 +11,11 @@ erDiagram
     APP_USER ||--o{ JOIN_REQUEST : "submits"
     APP_USER ||--o{ NOTIFICATION : "receives"
     FACILITY ||--o{ COURT : "contains"
+    COURT ||--o{ COURT_HOURS : "open on"
     COURT ||--o{ TIME_SLOT : "generates"
-    TIME_SLOT ||--o{ BOOKING : "reserved by"
-    BOOKING ||--o| PAYMENT : "paid through"
+    COURT ||--o{ BOOKING : "booked as"
+    BOOKING |o--o{ TIME_SLOT : "holds"
+    BOOKING ||--o{ PAYMENT : "paid through"
     OPEN_GAME ||--o{ JOIN_REQUEST : "receives"
 
     APP_USER {
@@ -29,7 +31,9 @@ erDiagram
         bigint facility_id PK
         bigint admin_id FK
         string name
+        string phone
         string address
+        string city
         decimal latitude
         decimal longitude
     }
@@ -41,10 +45,19 @@ erDiagram
         string sport_type
         boolean is_indoor
         decimal rental_rate
+        int slot_minutes
+        int payment_hold_minutes
+        string photo_url
+        boolean removed
+    }
+
+    COURT_HOURS {
+        bigint id PK
+        bigint court_id FK
+        int day_of_week "0 = Sunday"
+        boolean is_open
         time open_time
         time close_time
-        int slot_minutes
-        string photo_url
     }
 
     TIME_SLOT {
@@ -54,23 +67,32 @@ erDiagram
         time start_time
         time end_time
         string status "Available, Pending, Booked, Blocked"
+        string block_reason
+        bigint booking_id FK "booking holding the slot"
     }
 
     BOOKING {
         bigint booking_id PK
         bigint player_id FK
-        bigint slot_id FK
-        string status
+        bigint court_id FK
+        date slot_date
+        time start_time
+        time end_time
+        decimal hours
+        string status "Pending, Confirmed, Cancelled, Expired"
         decimal total_fee
-        string qr_code
+        string qr_code "booking reference"
         datetime payment_deadline
         datetime created_at
+        datetime cancelled_at
+        string cancelled_by
     }
 
     PAYMENT {
         bigint payment_id PK
         bigint booking_id FK
         string paymongo_reference
+        string paymongo_payment_id
         string method
         decimal amount
         string status
@@ -100,5 +122,6 @@ erDiagram
         string type
         string message
         datetime sent_at
+        datetime read_at
     }
 ```

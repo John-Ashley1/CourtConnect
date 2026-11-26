@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import { STATUS } from '../../constants/status'
 import { useAsync } from '../../hooks/useAsync'
 import { listMyFacilities } from '../../services/facilityService'
-import { cancelFacilityBooking, listFacilityBookings } from '../../services/facilityBookingService'
-import { fmtBookingWhen, peso } from '../../utils/format'
+import { cancelFacilityBooking, confirmFacilityBooking, listFacilityBookings } from '../../services/facilityBookingService'
+import { fmtBookingWhen, fmtDateTime, peso } from '../../utils/format'
 import AppLayout from '../../components/AppLayout'
 import AsyncContent from '../../components/AsyncContent'
 import { StatusBadge } from '../../components/Badge'
@@ -37,6 +37,7 @@ export default function BookingRecords() {
   const period = PERIODS.some((p) => p.value === params.get('period')) ? params.get('period') : 'upcoming'
   const [shown, setShown] = useState(PAGE)
   const [cancelling, setCancelling] = useState(null)
+  const [confirming, setConfirming] = useState(null)
   const [busy, setBusy] = useState(false)
 
   const set = (k, v) => { const p = new URLSearchParams(params); if (v) p.set(k, v); else p.delete(k); setParams(p, { replace: true }) }
@@ -46,6 +47,15 @@ export default function BookingRecords() {
 
   const facQ = useAsync(() => listMyFacilities(), [])
   const listQ = useAsync(() => listFacilityBookings({ q, status, facilityId, period }), [q, status, facilityId, period])
+
+  const doConfirm = async () => {
+    setBusy(true)
+    try {
+      const b = await confirmFacilityBooking(confirming.booking_id)
+      listQ.setData((rows) => rows.map((r) => (r.booking_id === b.booking_id ? b : r)))
+      toast(`${b.qr_code} confirmed. ${b.player?.full_name ?? 'The player'} was notified.`)
+    } catch (ex) { toast(ex.message, 'err'); listQ.reload() } finally { setBusy(false); setConfirming(null) }
+  }
 
   const doCancel = async () => {
     setBusy(true)
@@ -85,9 +95,15 @@ export default function BookingRecords() {
               { key: 'when', label: 'Date and time', render: (b) => fmtBookingWhen(b) },
               { key: 'fee', label: 'Fee', num: true, render: (b) => peso(b.total_fee) },
               { key: 'pay', label: 'Payment', render: (b) => (b.payment ? <StatusBadge kind="payment" status={b.payment.status} /> : '—') },
-              { key: 'st', label: 'Status', render: (b) => <StatusBadge kind="booking" status={b.status} /> },
+              { key: 'st', label: 'Status', render: (b) => <>
+                <StatusBadge kind="booking" status={b.status} />
+                {b.status === 'PENDING' && <><br /><span className="muted xsmall nowrap">Confirm by {fmtDateTime(b.payment_deadline).split(', ').pop()}</span></>}
+              </> },
               { key: 'act', label: <span className="sr-only">Actions</span>, render: (b) => ((b.status === 'CONFIRMED' || b.status === 'PENDING') && isUpcoming(b)
-                ? <Button variant="link" size="sm" className="danger-text" onClick={() => setCancelling(b)} aria-label={`Cancel booking ${b.qr_code}`}>Cancel</Button>
+                ? <div className="row-wrap nowrap-row">
+                    {b.status === 'PENDING' && <Button variant="link" size="sm" onClick={() => setConfirming(b)} aria-label={`Confirm booking ${b.qr_code}`}>Confirm</Button>}
+                    <Button variant="link" size="sm" className="danger-text" onClick={() => setCancelling(b)} aria-label={`Cancel booking ${b.qr_code}`}>Cancel</Button>
+                  </div>
                 : null) },
             ]} />
             {rows.length > shown && (
@@ -96,10 +112,19 @@ export default function BookingRecords() {
                 <span className="muted small">Showing {shown} of {rows.length}</span>
               </div>
             )}
-            <p className="hint mt-16">Bookings become Confirmed only after PayMongo verifies payment. Unpaid Pending bookings expire automatically after the payment time limit.</p>
+            <p className="hint mt-16">Confirm a Pending booking once the player has arranged payment with you. Pending bookings that aren’t confirmed by their time limit expire automatically and the slot is released.</p>
           </>
         }}
       </AsyncContent>
+
+      <ConfirmDialog open={!!confirming} busy={busy} title={`Confirm booking ${confirming?.qr_code ?? ''}?`}
+        confirmLabel="Confirm booking" cancelLabel="Not yet" onCancel={() => setConfirming(null)} onConfirm={doConfirm}>
+        {confirming && `${confirming.player?.full_name} · ${confirming.court.court_name}
+${fmtBookingWhen(confirming)}
+Fee: ${peso(confirming.total_fee)}
+
+Confirm only after the player has paid or arranged payment with you. The slot becomes Booked and the player is notified.`}
+      </ConfirmDialog>
 
       <ConfirmDialog open={!!cancelling} danger busy={busy} title={`Cancel booking ${cancelling?.qr_code ?? ''}?`}
         confirmLabel="Cancel booking" cancelLabel="Keep booking" onCancel={() => setCancelling(null)} onConfirm={doCancel}>

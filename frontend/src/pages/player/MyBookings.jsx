@@ -105,7 +105,7 @@ function BookingRow({ b, current, onQr, onCancel }) {
       </div>
       <div className="row-wrap">
         {b.status === 'CONFIRMED' && <Button variant="sec" size="sm" icon="qr" onClick={onQr}>Show QR</Button>}
-        {pending && <Button size="sm" to={`/player/checkout/${b.booking_id}`}>Pay now</Button>}
+        {pending && <Button size="sm" to={`/player/checkout/${b.booking_id}`}>View booking</Button>}
         {current && <Button variant="link" size="sm" className="danger-text" onClick={onCancel}>Cancel</Button>}
       </div>
     </article>
@@ -114,5 +114,5 @@ function BookingRow({ b, current, onQr, onCancel }) {
 
 function PayDeadline({ deadline }) {
   const secs = useCountdown(deadline)
-  return <p className="hint warn-text">{secs > 0 ? <>Pay within <b className="tabular">{fmtCountdown(secs)}</b> or this slot is released.</> : 'Payment time ran out. Refresh to see the update.'}</p>
+  return <p className="hint warn-text">{secs > 0 ? <>Must be paid or confirmed within <b className="tabular">{fmtCountdown(secs)}</b> or the slot is released.</> : 'Time ran out. Refresh to see the update.'}</p>
 }

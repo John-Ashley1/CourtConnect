@@ -13,14 +13,13 @@ import Card from '../../components/Card'
 import EmptyState from '../../components/EmptyState'
 import Input from '../../components/Input'
 import { ConfirmDialog } from '../../components/Modal'
-import Placeholder from '../../components/Placeholder'
 import Select from '../../components/Select'
 import { SkeletonPage } from '../../components/Skeleton'
 import Table from '../../components/Table'
 import { Segmented } from '../../components/Tabs'
 import { useToast } from '../../components/Toast'
 
-const EMPTY = { court_name: '', sport_type: '', rental_rate: '', is_indoor: true }
+const EMPTY = { court_name: '', sport_type: '', rental_rate: '', is_indoor: true, photo_url: '' }
 const slotLength = (m) => (m % 60 === 0 ? `${m / 60} hour${m === 60 ? '' : 's'}` : m > 60 ? `${Math.floor(m / 60)} hr ${m % 60} min` : `${m} minutes`)
 
 /** facility-courts: courts per facility, add / edit / remove. ?facility= preselects a facility. */
@@ -42,7 +41,7 @@ export default function Courts() {
   const open = (c) => {
     setForm(c ? c.court_id : 'new')
     setErr({})
-    setF(c ? { court_name: c.court_name, sport_type: c.sport_type, rental_rate: String(c.rental_rate), is_indoor: c.is_indoor } : EMPTY)
+    setF(c ? { court_name: c.court_name, sport_type: c.sport_type, rental_rate: String(c.rental_rate), is_indoor: c.is_indoor, photo_url: c.photo_url ?? '' } : EMPTY)
     setTimeout(() => document.getElementById('ct-court_name')?.focus(), 0)
   }
   const set = (k) => (e) => { setF({ ...f, [k]: e.target.value }); setErr({ ...err, [k]: null }) }
@@ -53,11 +52,12 @@ export default function Courts() {
     if (!f.court_name.trim()) v.court_name = 'Enter a court name.'
     if (!f.sport_type) v.sport_type = 'Choose a sport.'
     if (!(Number(f.rental_rate) > 0)) v.rental_rate = 'Enter a rate greater than ₱0.'
+    if (f.photo_url.trim() && !/^https:\/\/\S+$/i.test(f.photo_url.trim())) v.photo_url = 'Enter an image link that starts with https://, or leave it blank.'
     setErr(v)
     if (Object.keys(v).length) { document.getElementById(`ct-${Object.keys(v)[0]}`)?.focus(); return }
     setBusy(true)
     try {
-      const data = { ...f, rental_rate: Number(f.rental_rate) }
+      const data = { ...f, rental_rate: Number(f.rental_rate), photo_url: f.photo_url.trim() || null }
       const saved = form === 'new' ? await createCourt(fac.facility_id, data) : await updateCourt(form, data)
       q.setData((d) => ({
         ...d,
@@ -114,7 +114,9 @@ export default function Courts() {
                     <p className="hint">Outdoor courts show a weather forecast to players.</p>
                   </div>
                 </div>
-                <Placeholder icon="upload" title="Court photos">Photo upload comes in a later increment. Players see a placeholder until then.</Placeholder>
+                <Input id="ct-photo_url" label="Photo link (optional)" type="url" inputMode="url" placeholder="https://…/court.jpg" maxLength={500}
+                  value={f.photo_url} onChange={set('photo_url')} error={err.photo_url}
+                  hint="A link to a photo of the court. Players see it on the court’s page. Uploading photos directly comes later." />
                 <div className="row-wrap">
                   <Button type="submit" busy={busy}>{form === 'new' ? 'Add court' : 'Save changes'}</Button>
                   <Button variant="sec" onClick={() => setForm(null)} disabled={busy}>Cancel</Button>
@@ -133,7 +135,7 @@ export default function Courts() {
                 { key: 'type', label: 'Type', render: (c) => <Badge>{c.is_indoor ? 'Indoor' : 'Outdoor'}</Badge> },
                 { key: 'rate', label: 'Rate / hour', num: true, render: (c) => peso(c.rental_rate) },
                 { key: 'len', label: 'Slot length', render: (c) => slotLength(c.slot_minutes) },
-                { key: 'photos', label: 'Photos', render: (c) => (c.photo_url ? '1 photo' : <span className="muted">None yet</span>) },
+                { key: 'photos', label: 'Photo', render: (c) => (c.photo_url ? 'Added' : <span className="muted">None yet</span>) },
                 { key: 'act', label: <span className="sr-only">Actions</span>, render: (c) => (
                   <div className="row-wrap nowrap-row">
                     <Button variant="link" size="sm" onClick={() => open(c)} aria-label={`Edit ${c.court_name}`}>Edit</Button>

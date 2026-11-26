@@ -9,6 +9,9 @@ import { request, qs } from './client'
 export const listFacilityBookings = ({ q = '', status = '', facilityId = '', period = 'upcoming' } = {}) =>
   request('/facility-bookings' + qs({ q, status, facilityId, period }))
 
+/** Pending → Confirmed (payment arranged with the facility); slots become Booked; the player is notified. POST /api/facility-bookings/{bookingId}/confirm */
+export const confirmFacilityBooking = (bookingId) => request(`/facility-bookings/${bookingId}/confirm`, { method: 'POST' })
+
 /** Releases the slots and notifies the player. POST /api/facility-bookings/{bookingId}/cancel */
 export const cancelFacilityBooking = (bookingId) => request(`/facility-bookings/${bookingId}/cancel`, { method: 'POST' })
 

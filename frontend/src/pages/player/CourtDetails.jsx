@@ -4,7 +4,6 @@ import { useAsync } from '../../hooks/useAsync'
 import { getCourt, listCourtsByFacility } from '../../services/courtService'
 import { listSlots } from '../../services/slotService'
 import { holdSlots } from '../../services/bookingService'
-import { PAYMENT_HOLD_MINUTES } from '../../constants/status'
 import { addDays, areaOf, fmtDate, fmtTime, fmtTimeRange, isoDate, parseDate, peso } from '../../utils/format'
 import AppLayout from '../../components/AppLayout'
 import AsyncContent from '../../components/AsyncContent'
@@ -12,6 +11,7 @@ import Button from '../../components/Button'
 import Card from '../../components/Card'
 import EmptyState from '../../components/EmptyState'
 import Icon from '../../components/Icon'
+import { ConfirmDialog } from '../../components/Modal'
 import MapView from '../../components/MapView'
 import Placeholder from '../../components/Placeholder'
 import { SkeletonPage } from '../../components/Skeleton'
@@ -33,6 +33,7 @@ export default function CourtDetails() {
   const [sel, setSel] = useState([])
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
+  const [confirming, setConfirming] = useState(false)
 
   const courtQ = useAsync(() => getCourt(courtId).then((court) =>
     listCourtsByFacility(court.facility_id).then((courts) => ({ court, courts }))), [courtId])
@@ -42,6 +43,8 @@ export default function CourtDetails() {
 
   const facility = courtQ.data?.court.facility
   const court = courtQ.data?.court
+  // Hours on the selected date (operating_hours: day_of_week 0 = Sunday).
+  const dayHours = court?.operating_hours?.find((h) => h.day_of_week === parseDate(date).getDay())
 
   const pickCourt = (id) => navigate(`/player/courts/${id}?date=${date}`, { replace: true })
   const pickDate = (d) => { const p = new URLSearchParams(params); p.set('date', d); setParams(p, { replace: true }) }
@@ -67,7 +70,7 @@ export default function CourtDetails() {
     const extendsAfter = i === last + 1 && slots[last].end_time === slot.start_time
     const extendsBefore = i === first - 1 && slot.end_time === slots[first].start_time
     if (!extendsAfter && !extendsBefore) { setSel([slot.slot_id]); return }
-    if (sel.length >= MAX_HOURS) { setMsg(`You can book up to ${MAX_HOURS} hours at a time.`); return }
+    if (sel.length >= MAX_HOURS) { setMsg(`You can book up to ${MAX_HOURS} slots at a time.`); return }
     setSel(extendsAfter ? [...sel, slot.slot_id] : [slot.slot_id, ...sel])
   }
 
@@ -77,6 +80,7 @@ export default function CourtDetails() {
 
   const book = async () => {
     setBusy(true)
+    setConfirming(false)
     try {
       const b = await holdSlots({ courtId: court.court_id, slotIds: sel })
       navigate(`/player/checkout/${b.booking_id}`)
@@ -107,20 +111,21 @@ export default function CourtDetails() {
                   tabs={courts.map((c) => ({ id: c.court_id, label: c.court_name }))} />
                 <TabPanel idPrefix="court" value={court.court_id}>
                 <div className="photo-row">
-                  {[1, 2, 3].map((n) => <div key={n} className="ph-box photo" aria-hidden={n > 1}><Icon name="camera" size={20} /><span>Court photo</span></div>)}
+                  {court.photo_url
+                    ? <img className="photo" src={court.photo_url} alt={`Photo of ${court.court_name}`} style={{ objectFit: 'cover' }} />
+                    : <div className="ph-box photo"><Icon name="camera" size={20} /><span>No photo yet</span></div>}
                 </div>
-                <p className="hint m-0">Photo upload comes in a later increment.</p>
                 <div className="facts">
                   <span><b>Sport</b> · {court.sport_type}</span>
                   <span><b>Type</b> · {court.is_indoor ? 'Indoor' : 'Outdoor'}</span>
                   <span><b>Rate</b> · {peso(court.rental_rate)} per hour</span>
-                  <span><b>Hours</b> · {fmtTime(court.open_time)} – {fmtTime(court.close_time)}</span>
-                  <span><b>Slot length</b> · {court.slot_minutes === 60 ? '1 hour' : `${court.slot_minutes} minutes`}</span>
+                  <span><b>Hours on {fmtDate(date)}</b> · {dayHours?.is_open ? `${fmtTime(dayHours.open_time)} – ${fmtTime(dayHours.close_time)}` : 'Closed'}</span>
+                  <span><b>Slot length</b> · {court.slot_minutes % 60 === 0 ? `${court.slot_minutes / 60} hour${court.slot_minutes === 60 ? '' : 's'}` : `${court.slot_minutes} minutes`}</span>
                 </div>
                 </TabPanel>
               </Card>
 
-              <Card title="Choose a time slot" subtitle={`Pick 1 to ${MAX_HOURS} hours in a row.`} actions={<SlotLegend />}>
+              <Card title="Choose a time slot" subtitle={`Pick 1 to ${MAX_HOURS} slots in a row.`} actions={<SlotLegend />}>
                 <div className="date-chips" role="group" aria-label="Date">
                   {Array.from({ length: DAYS }, (_, i) => addDays(today, i)).map((d) => {
                     const on = d === date
@@ -163,8 +168,8 @@ export default function CourtDetails() {
                     <div><dt>Rate × hours</dt><dd className="normal">{peso(court.rental_rate)} × {hours} hr</dd></div>
                     <div className="sum-total"><dt>Booking fee</dt><dd>{peso(fee)}</dd></div>
                   </dl>
-                  <Button block className="mt-16" busy={busy} onClick={book}>Continue to payment</Button>
-                  <p className="hint">The slot is held as <b>Pending</b> for {PAYMENT_HOLD_MINUTES} minutes while you pay. Unpaid holds are released automatically.</p>
+                  <Button block className="mt-16" busy={busy} onClick={() => setConfirming(true)}>Book {fmtTimeRange(picked[0].start_time, picked[picked.length - 1].end_time)}</Button>
+                  <p className="hint">Booking holds the slot as <b>Pending</b> for {court.payment_hold_minutes} minutes until it’s paid or confirmed. Holds that aren’t confirmed in time are released automatically.</p>
                 </>}
               </Card>
 
@@ -189,6 +194,19 @@ export default function CourtDetails() {
           </div>
         )}
       </AsyncContent>
+      {court && picked.length > 0 && (
+        <ConfirmDialog open={confirming} busy={busy} title={`Book ${court.court_name}?`} confirmLabel={`Book for ${peso(fee)}`} cancelLabel="Go back"
+          onCancel={() => setConfirming(false)} onConfirm={book}>
+          {`${facility.name}
+${fmtDate(date)} · ${fmtTimeRange(picked[0].start_time, picked[picked.length - 1].end_time)}
+
+`
+            + `Booking fee: ${peso(court.rental_rate)} × ${hours} hr = ${peso(fee)}
+
+`
+            + `The slot is held as Pending for ${court.payment_hold_minutes} minutes. If the booking isn’t paid or confirmed by then, it is released automatically.`}
+        </ConfirmDialog>
+      )}
     </AppLayout>
   )
 }

@@ -24,7 +24,9 @@ const PERIODS = [
   { value: 'week', label: 'Last 7 days' }, { value: 'month', label: 'Last 30 days' }, { value: 'all', label: 'All dates' },
 ]
 const STATUSES = Object.entries(STATUS.booking).map(([value, s]) => ({ value, label: s.label }))
-const isUpcoming = (b) => new Date(`${b.slot.slot_date}T${b.end_time}`).getTime() > Date.now()
+// Same rules as the server: cancel only before a booking starts; confirm a Pending booking until it ends.
+const hasStarted = (b) => new Date(`${b.slot.slot_date}T${b.slot.start_time}`).getTime() <= Date.now()
+const hasEnded = (b) => new Date(`${b.slot.slot_date}T${b.end_time}`).getTime() <= Date.now()
 
 /** facility-bookings: search and filter booking records; cancel upcoming bookings. ?q= &period= prefill. */
 export default function BookingRecords() {
@@ -98,11 +100,12 @@ export default function BookingRecords() {
               { key: 'st', label: 'Status', render: (b) => <>
                 <StatusBadge kind="booking" status={b.status} />
                 {b.status === 'PENDING' && <><br /><span className="muted xsmall nowrap">Confirm by {fmtDateTime(b.payment_deadline).split(', ').pop()}</span></>}
+                {b.status === 'CANCELLED' && <><br /><span className="muted xsmall nowrap">{b.cancelled_by === 'FACILITY_ADMIN' ? 'By your facility' : 'By the player'}</span></>}
               </> },
-              { key: 'act', label: <span className="sr-only">Actions</span>, render: (b) => ((b.status === 'CONFIRMED' || b.status === 'PENDING') && isUpcoming(b)
+              { key: 'act', label: <span className="sr-only">Actions</span>, render: (b) => ((b.status === 'CONFIRMED' || b.status === 'PENDING') && !hasEnded(b)
                 ? <div className="row-wrap nowrap-row">
                     {b.status === 'PENDING' && <Button variant="link" size="sm" onClick={() => setConfirming(b)} aria-label={`Confirm booking ${b.qr_code}`}>Confirm</Button>}
-                    <Button variant="link" size="sm" className="danger-text" onClick={() => setCancelling(b)} aria-label={`Cancel booking ${b.qr_code}`}>Cancel</Button>
+                    {!hasStarted(b) && <Button variant="link" size="sm" className="danger-text" onClick={() => setCancelling(b)} aria-label={`Cancel booking ${b.qr_code}`}>Cancel</Button>}
                   </div>
                 : null) },
             ]} />

@@ -14,9 +14,12 @@ import { SkeletonPage } from '../../components/Skeleton'
 import Tabs, { TabPanel } from '../../components/Tabs'
 import { useToast } from '../../components/Toast'
 
-/** Current = upcoming and still Pending or Confirmed. Everything else is Previous. */
-const isCurrent = (b) => (b.status === 'PENDING' || b.status === 'CONFIRMED')
-  && new Date(`${b.slot.slot_date}T${b.end_time}`).getTime() > Date.now()
+const startsAt = (b) => new Date(`${b.slot.slot_date}T${b.slot.start_time}`).getTime()
+const endsAt = (b) => new Date(`${b.slot.slot_date}T${b.end_time}`).getTime()
+/** Current = not over yet and still Pending or Confirmed. Everything else is Previous (FR-052). */
+const isCurrent = (b) => (b.status === 'PENDING' || b.status === 'CONFIRMED') && endsAt(b) > Date.now()
+/** Eligible to cancel (FR-053): current and not started yet. The server checks the same rule. */
+const canCancel = (b) => isCurrent(b) && startsAt(b) > Date.now()
 
 /** player-my-bookings: current/previous tabs, QR, pay now, cancel. */
 export default function MyBookings() {
@@ -36,6 +39,8 @@ export default function MyBookings() {
       setCancelling(null)
     } catch (ex) {
       toast(ex.message, 'err')
+      setCancelling(null)
+      q.reload() // e.g. it started, expired or was cancelled by the facility in the meantime
     } finally { setBusy(false) }
   }
 
@@ -102,11 +107,14 @@ function BookingRow({ b, current, onQr, onCancel }) {
         <p className="muted small mt-2">{b.facility.name} · {fmtBookingWhen(b)}</p>
         <p className="xsmall mt-2">Ref {b.qr_code} · {peso(b.total_fee)}</p>
         {pending && <PayDeadline deadline={b.payment_deadline} />}
+        {current && b.status === 'CONFIRMED' && startsAt(b) <= Date.now() && <p className="hint">In progress now. Bookings can only be cancelled before they start.</p>}
+        {b.status === 'CANCELLED' && <p className="hint">{b.cancelled_by === 'FACILITY_ADMIN' ? 'Cancelled by the facility.' : 'Cancelled by you.'}</p>}
+        {b.status === 'EXPIRED' && <p className="hint">Not paid or confirmed in time, so the slot was released.</p>}
       </div>
       <div className="row-wrap">
         {b.status === 'CONFIRMED' && <Button variant="sec" size="sm" icon="qr" onClick={onQr}>Show QR</Button>}
         {pending && <Button size="sm" to={`/player/checkout/${b.booking_id}`}>View booking</Button>}
-        {current && <Button variant="link" size="sm" className="danger-text" onClick={onCancel}>Cancel</Button>}
+        {canCancel(b) && <Button variant="link" size="sm" className="danger-text" onClick={onCancel} aria-label={`Cancel booking ${b.qr_code}`}>Cancel</Button>}
       </div>
     </article>
   )

@@ -36,4 +36,6 @@ public final class Dtos {
     @NotBlank(message="This reset link is missing its code. Open the link from the email again.") String token,
     @NotBlank(message="Enter a new password.") @StrongPassword @Size(max=72, message="Password must be 72 characters or fewer.") String newPassword) {}
   public record MessageResponse(String message) {}
+  /** role: so the page sends players to /signin and administrators to the Administrator sign-in page. */
+  public record ResetPasswordResponse(String message, Role role) {}
 }

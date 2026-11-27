@@ -3,6 +3,11 @@
 // `match`: extra path prefixes that highlight the item (e.g. checkout belongs to "Find courts").
 
 export const SIGN_IN = '/signin'
+/** Login-only page for facility and system administrators (the landing page's "Administrator sign in"). */
+export const ADMIN_SIGN_IN = '/admin/signin'
+
+/** Where a role signs in: administrators → ADMIN_SIGN_IN, players and unknown → SIGN_IN. */
+export const signInFor = (role) => (role === 'FACILITY_ADMIN' || role === 'SYSTEM_ADMIN' ? ADMIN_SIGN_IN : SIGN_IN)
 
 export const ROLES = {
   PLAYER: {

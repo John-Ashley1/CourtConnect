@@ -53,8 +53,9 @@ public class PasswordResetService {
     });
   }
 
+  /** Returns the account's role, so the page can send the user to the right sign-in page afterwards. */
   @Transactional
-  public void resetPassword(String rawToken, String newPassword){
+  public Role resetPassword(String rawToken, String newPassword){
     Instant now = Instant.now();
     PasswordResetToken t = tokens.findByTokenHash(sha256(rawToken.trim()))
       .filter(x -> x.isUsable(now))
@@ -64,6 +65,7 @@ public class PasswordResetService {
     u.invalidateTokens();                                // signed out on every device
     users.save(u);
     tokens.expireAllFor(u, now);                         // this link (and any other) is now used
+    return u.getRole();
   }
 
   private static String newToken(){

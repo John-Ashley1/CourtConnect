@@ -161,7 +161,8 @@ class AccountRegressionTest {
     call("POST", "/api/auth/reset-password", null, Map.of("token", "made-up", "newPassword", "Reset2026"))
       .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.token").exists());
 
-    call("POST", "/api/auth/reset-password", null, Map.of("token", token, "newPassword", "Reset2026")).andExpect(status().isOk());
+    call("POST", "/api/auth/reset-password", null, Map.of("token", token, "newPassword", "Reset2026")).andExpect(status().isOk())
+      .andExpect(jsonPath("$.role").value("PLAYER"));   // lets the page pick the right sign-in page
     call("GET", "/api/auth/me", before, null).andExpect(status().isUnauthorized());   // signed out everywhere
     login("rp-" + n, "Reset2026");
     call("POST", "/api/auth/login", null, Map.of("email", u.getEmail(), "password", "Court2026")).andExpect(status().isUnauthorized());

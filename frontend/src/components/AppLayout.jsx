@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth'
-import { ROLES, SIGN_IN, findNavItem, initials } from '../roles'
+import { ROLES, findNavItem, initials } from '../roles'
 import { useAsync } from '../hooks/useAsync'
 import { NOTIFICATIONS_CHANGED, unreadCount } from '../services/notificationService'
 import BrandLogo from './BrandLogo'
@@ -21,7 +21,6 @@ let lastPath = null
 export default function AppLayout({ title, description, actions, crumbs, narrow, children }) {
   const { user, logout } = useAuth()
   const { pathname } = useLocation()
-  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const cfg = ROLES[user.role]
   const match = findNavItem(user.role, pathname)
@@ -44,7 +43,7 @@ export default function AppLayout({ title, description, actions, crumbs, narrow,
     return () => window.removeEventListener(NOTIFICATIONS_CHANGED, unread.reload)
   }, [unread.reload])
 
-  const signOut = () => { logout(); navigate(SIGN_IN, { replace: true }) }
+  const signOut = () => logout() // players → /signin, administrators → /admin/signin (see App.jsx)
 
   return (
     <div className="shell">

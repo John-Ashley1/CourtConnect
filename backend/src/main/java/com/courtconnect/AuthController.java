@@ -36,8 +36,8 @@ public class AuthController {
   }
 
   @PostMapping("/reset-password")
-  public MessageResponse resetPassword(@Valid @RequestBody ResetPasswordRequest r){
-    resets.resetPassword(r.token(), r.newPassword());
-    return new MessageResponse("Your password has been reset. Sign in with your new password.");
+  public ResetPasswordResponse resetPassword(@Valid @RequestBody ResetPasswordRequest r){
+    Role role = resets.resetPassword(r.token(), r.newPassword());
+    return new ResetPasswordResponse("Your password has been reset. Sign in with your new password.", role);
   }
 }

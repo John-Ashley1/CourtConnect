@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../api'
 import { useAuth } from '../../auth'
 import PasswordInput from '../../components/PasswordInput'
@@ -12,7 +12,6 @@ export default function ResetPassword() {
   const [params] = useSearchParams()
   const token = params.get('token') ?? ''
   const { logout } = useAuth()
-  const navigate = useNavigate()
   const [form, setForm] = useState({ newPassword: '', confirmPassword: '' })
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState(null) // { message, offline, badLink }
@@ -38,8 +37,9 @@ export default function ResetPassword() {
     setBusy(true)
     try {
       const r = await api('/auth/reset-password', { method: 'POST', body: { token, newPassword: form.newPassword } })
-      logout(r.message) // every session was signed out; show the message on the sign-in page
-      navigate('/signin', { replace: true })
+      // Every session was signed out. The response says which account it was, so administrators
+      // go to the Administrator sign-in page and players to /signin, with the message shown there.
+      logout({ message: r.message, role: r.role })
     } catch (ex) {
       const { token: tokenErr, ...fieldErrs } = ex.fieldErrors
       if (Object.keys(fieldErrs).length) setErrors(fieldErrs)

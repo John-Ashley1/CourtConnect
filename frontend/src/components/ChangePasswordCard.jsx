@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { api, setToken } from '../api'
+import { api } from '../api'
+import { useAuth } from '../auth'
 import Icon from './Icon'
 import PasswordInput from './PasswordInput'
 import PasswordStrengthMeter from './PasswordStrengthMeter'
@@ -20,10 +21,11 @@ function validate(f) {
 }
 
 /**
- * Change password (Increment 2; no dedicated FR in the SRS). On success the backend signs out every other device and returns
- * a fresh token, so this device stays signed in.
+ * Change password (Increment 2; no dedicated FR in the SRS). On success every session is signed out, this one too,
+ * and the shared logout sends the user to their sign-in page (administrators: /admin/signin).
  */
 export default function ChangePasswordCard() {
+  const { logout } = useAuth()
   const [form, setForm] = useState(EMPTY)
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
@@ -47,13 +49,12 @@ export default function ChangePasswordCard() {
         method: 'POST',
         body: { currentPassword: form.currentPassword, newPassword: form.newPassword },
       })
-      setToken(r.token) // the old token no longer works
-      setForm(EMPTY)
-      setResult({ ok: true, message: r.message })
+      // Every session is signed out, this one too: sign in again with the new password.
+      // The shared logout sends administrators to the Administrator sign-in page and players to /signin.
+      logout({ message: 'Password changed. Sign in with your new password.' })
     } catch (ex) {
       if (Object.keys(ex.fieldErrors).length) setErrors(ex.fieldErrors)
       setResult({ ok: false, message: ex.message })
-    } finally {
       setBusy(false)
     }
   }
@@ -66,7 +67,7 @@ export default function ChangePasswordCard() {
         <span className="section-icon" aria-hidden="true"><Icon name="lock" size={20} /></span>
         <div>
           <h2 id="pw-title">Password &amp; security</h2>
-          <p>Change your password. You’ll stay signed in here; any other devices will be signed out.</p>
+          <p>Change your password. You’ll be signed out on all devices, including this one, and then sign in with your new password.</p>
         </div>
       </header>
 
